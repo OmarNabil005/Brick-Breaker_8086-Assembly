@@ -1,3 +1,4 @@
+
 EXTRN Brick:FAR
 public brick_width
 public brick_height
@@ -6,9 +7,10 @@ public brick_height
 .stack 64
 .data
     bricks_initial_x dw 4d, 43d, 82d, 121d, 160d, 199d, 238d, 277d		;initial x-values (columns) for bricks (total=8)
-    bricks_initial_y dw 6d, 18d, 30d, 42d, 54d							;initial y-values (rows) for bricks (total=5)
+    bricks_initial_y dw 6d, 20d, 34d, 48d, 62d							;initial y-values (rows) for bricks (total=5)
+	colors dw 12, 7, 9, 10, 11											;colors for rows (red, grey, blue, green, cyan)
     brick_width dw 32d					;bricks width
-    brick_height dw 7d					;bricks height
+    brick_height dw 9d					;bricks height
 .code
 main PROC FAR
     mov ax, @data
@@ -27,9 +29,10 @@ main PROC FAR
 	Render_Horizontal:
         PUSH CX							;store CX to keep for counter
         ;Store the x-value in CX, and y-value in DX, the PROC Brick expects them that way
+		MOV AX, colors[SI]				;set row color according to index (we're only interested in AL)
 		MOV CX, bricks_initial_x[DI]	;store in CX and initial x of index DI (0 initially)
 		PUSH DI							;store DI to protect index before calling the PROC
-		CALL Brick						;draw a single brick, of initial X at CX, and initial Y in DX
+		CALL Brick						;draw a single brick, of initial X at CX, and initial Y in DX, and color in AL (we set AX)
 		POP DI							;restore DI
 		ADD DI, 2						;increment index by 2 (because its word)
         POP CX							;restore counter

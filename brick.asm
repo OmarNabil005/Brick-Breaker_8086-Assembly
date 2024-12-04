@@ -7,7 +7,7 @@ EXTRN brick_height:word
 .code
 brick PROC FAR
 PUSH DI
-    MOV AL, 12                      ;pixel color = bright red
+    
     MOV AH, 0Ch                     ;set interrupt variable
 	
 	PUSH BP							;store BP to save its value
