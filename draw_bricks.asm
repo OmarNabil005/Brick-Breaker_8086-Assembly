@@ -8,10 +8,11 @@ public brick_height
 .data
     bricks_initial_x dw 4d, 43d, 82d, 121d, 160d, 199d, 238d, 277d		;initial x-values (columns) for bricks (total=8)
     bricks_initial_y dw 6d, 20d, 34d, 48d, 62d							;initial y-values (rows) for bricks (total=5)
-	num_columns dw 8													;number of bricks in each row
 	colors dw 7, 10, 9, 13, 12											;colors for rows (grey, green, blue, pink, red)
     brick_width dw 32d					;bricks width
     brick_height dw 9d					;bricks height
+	num_columns EQU 8					;number of bricks in each row
+	num_rows EQU 5						;number of rows
 .code
 draw_bricks PROC FAR
     mov ax, @data
@@ -44,7 +45,7 @@ draw_bricks PROC FAR
 	Render_Vertical:
 		MOV DI, 0						;reset initial x index back to 0
 		ADD SI, 2						;increment initial y index
-		CMP SI, 10						;check if we reached the limit of bricks (10)
+		CMP SI, num_rows * 2			;check if we reached the limit of bricks (10)
 		JGE END_PROC					;if we did, return
 		MOV DX, Bricks_Initial_y[SI]	;put the current y by its index in DX
 		mov cx, 8						;restore CX for the upper loop
