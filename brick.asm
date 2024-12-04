@@ -6,8 +6,6 @@ EXTRN brick_height:word
 .model small
 .code
 brick PROC FAR
-PUSH DI
-    
     MOV AH, 0Ch                     ;set interrupt variable
 	
 	PUSH BP							;store BP to save its value
@@ -42,7 +40,6 @@ PUSH DI
 	POP DX							
 	POP CX
 	POP BP
-	POP DI
 	RET
 
 brick ENDP
