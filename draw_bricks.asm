@@ -8,6 +8,7 @@ public brick_height
 .data
     bricks_initial_x dw 4d, 43d, 82d, 121d, 160d, 199d, 238d, 277d		;initial x-values (columns) for bricks (total=8)
     bricks_initial_y dw 6d, 20d, 34d, 48d, 62d							;initial y-values (rows) for bricks (total=5)
+	num_columns dw 8													;number of bricks in each row
 	colors dw 12, 7, 9, 10, 11											;colors for rows (red, grey, blue, green, cyan)
     brick_width dw 32d					;bricks width
     brick_height dw 9d					;bricks height
@@ -20,7 +21,7 @@ draw_bricks PROC FAR
     MOV AH, 0
     INT 10h								;set video mode
 
-    MOV CX, 8							;counter for number of bricks in each row
+    MOV CX, num_columns					;counter for number of bricks in each row
 	MOV DI, 0							;index for column
 	MOV SI, 0							;index for row
 	MOV DX, bricks_initial_y			;get first y-value and store in DX
