@@ -94,10 +94,10 @@ MAIN PROC
     dec barLeft             ; move left
     mov cx, barTop
     mov barY, cx            ; reset barY to match top
-    dec speedCounter
+    dec speedCounter        ; for (speedCounter = speed; speedCounter > 0; --speedCounter) move left
     jnz moveLeft
     mov bl, speed
-    mov speedCounter, bl
+    mov speedCounter, bl    ; speedCounter = speed
     jmp checkKey            ; check next movement
 
     moveRight:
@@ -136,20 +136,20 @@ MAIN PROC
     inc barLeft             ; move right
     mov cx, barTop
     mov barY, cx            ; reset barY to match top
-    dec speedCounter
+    dec speedCounter        ; for (speedCounter = speed; speedCounter > 0; --speedCounter) move left
     jnz moveRight
     mov bl, speed
-    mov speedCounter, bl
+    mov speedCounter, bl    ; speedCounter = speed
     jmp checkKey            ; check next movement
                        
     checkKey:               ; scan codes *** left arrow -> 4B, right arrow -> 4D , esc -> 1 
     mov ah, 1               ; peek keyboard buffer
     int 16h
-    jz  checkKey            ; jump to wherever you want later to keep logic going if no letter was pressed
+    jz  checkKey            ; jump to wherever you want later to keep logic going if no key was pressed
     mov ah, 0               ; get key (and clear keyboard buffer)
     int 16h
     
-    cmp ah, 1 
+    cmp ah, 1h
     je exit
 
     cmp ah, 4Bh
