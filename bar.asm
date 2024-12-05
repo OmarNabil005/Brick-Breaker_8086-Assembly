@@ -17,6 +17,8 @@ endm
     barRight dw 370d
     barTop dw 450d
     barBottom dw 470d
+    speed db 02h
+    speedCounter db 02h
 .CODE
 MAIN PROC
     
@@ -25,7 +27,7 @@ MAIN PROC
 
     clearScreen
 
-    mov ah, 0h              ;enter video mode
+    mov ah, 0h              ; enter video mode
     mov al, 12h             ; 640 * 480 -> 16 colors 
     int 10h
 
@@ -92,6 +94,10 @@ MAIN PROC
     dec barLeft             ; move left
     mov cx, barTop
     mov barY, cx            ; reset barY to match top
+    dec speedCounter
+    jnz moveLeft
+    mov bl, speed
+    mov speedCounter, bl
     jmp checkKey            ; check next movement
 
     moveRight:
@@ -130,6 +136,10 @@ MAIN PROC
     inc barLeft             ; move right
     mov cx, barTop
     mov barY, cx            ; reset barY to match top
+    dec speedCounter
+    jnz moveRight
+    mov bl, speed
+    mov speedCounter, bl
     jmp checkKey            ; check next movement
                        
     checkKey:               ; scan codes *** left arrow -> 4B, right arrow -> 4D , esc -> 1 
