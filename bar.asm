@@ -153,12 +153,12 @@ MAIN PROC
     je exit
 
     cmp ah, 4Bh
-    jne cont2
+    jne checkRight          ; if not left arrow, check right arrow
     jmp moveLeft
-    cont2:
 
+    checkRight:
     cmp ah, 4Dh
-    jne checkKey
+    jne checkKey            ; if not right arrow, check next key
     jmp moveRight
     
     exit:
