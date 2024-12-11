@@ -1,3 +1,5 @@
+public Bar
+
 clearScreen macro
     mov bh, 7h
     mov cx, 0h
@@ -20,7 +22,7 @@ endm
     speed db 02h
     speedCounter db 02h
 .CODE
-MAIN PROC
+Bar PROC FAR
     
     mov ax, @DATA
     mov ds, ax
@@ -148,9 +150,6 @@ MAIN PROC
     jz  checkKey            ; jump to wherever you want later to keep logic going if no key was pressed
     mov ah, 0               ; get key (and clear keyboard buffer)
     int 16h
-    
-    cmp ah, 1h
-    je exit
 
     cmp ah, 4Bh
     jne checkRight          ; if not left arrow, check right arrow
@@ -160,10 +159,6 @@ MAIN PROC
     cmp ah, 4Dh
     jne checkKey            ; if not right arrow, check next key
     jmp moveRight
-    
-    exit:
-    mov ah, 4Ch             ; close program
-    int 21h
 
-MAIN ENDP
-END MAIN
+Bar ENDP
+END Bar
