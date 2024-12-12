@@ -7,6 +7,8 @@
 	int 10h                      ; call the interrupt
 	endm
 
+	EXTRN bricks_initial_x:word
+	EXTRN bricks_initial_y:word
 	EXTRN Brick:FAR
 	public TIME_STORE
 	public Move_Ball
@@ -15,7 +17,7 @@
 	public BALL_X
 	public BALL_Y
 	public BALL_X_SPEED
-	public BALL_X_SPEED
+	public BALL_Y_SPEED
 
 	.MODEL SMALL
 	.STACK 100h
@@ -25,27 +27,30 @@
 	brick_width EQU 32d					;bricks width
     brick_height EQU 9d					;bricks height
 
-	WINDOW_WIDTH    dw 140h		;width of the window (320)
-	WINDOW_HEIGHT   dw 0c8h		;height of the window (200)
-	WINDOW_BOUNCE   dw 3h		;used to check collision early
+	WINDOW_WIDTH    dw 140h				;width of the window (320)
+	WINDOW_HEIGHT   dw 0c8h				;height of the window (200)
+	WINDOW_BOUNCE   dw 3h				;used to check collision early
 
-	BALL_X 			dw 0a0h 		;x position of the ball
-	BALL_ORIGINAL_X dw 0a0h		;x original position 
+	BALL_X 			dw 0a0h 			;x position of the ball
+	BALL_ORIGINAL_X dw 0a0h				;x original position 
 
-	BALL_Y 			dw 64h 		;y position of the ball
-	BALL_ORIGINAL_Y dw 64h		;y original position 
+	BALL_Y 			dw 64h 				;y position of the ball
+	BALL_ORIGINAL_Y dw 64h				;y original position 
 
-	BALL_SIZE 		dw 04h 		;size of the ball
+	BALL_SIZE 		dw 04h 				;size of the ball
 
-	TIME_STORE  	db 0		;variable used for checking time changed
+	TIME_STORE  	db 0				;variable used for checking time changed
 
-	BALL_X_SPEED 	dw 02h		;speed of the ball in x axis 
-	BALL_Y_SPEED 	dw 05h		;speed of the ball in y axis 
+	BALL_X_SPEED 	dw 02h				;speed of the ball in x axis 
+	BALL_Y_SPEED 	dw 05h				;speed of the ball in y axis 
 
-	bricks_initial_x dw 4d, 39d, 74d, 109d,144d,179d, 214d, 249d
-	bricks_initial_y dw 6d, 20d, 34d, 48d, 62d		
+	active_bricks dw 1, 1, 1, 1, 1, 1, 1, 1,1
+				  dw 1, 1, 1, 1, 1, 1, 1, 1,1
+				  dw 1, 1, 1, 1, 1, 1, 1, 1,1
+				  dw 1, 1, 1, 1, 1, 1, 1, 1,1
+				  dw 1, 1, 1, 1, 1, 1, 1, 1,1
+
 	.CODE
-	
 
 	Move_Ball PROC FAR
 		MOV AX,BALL_X_SPEED			
@@ -118,15 +123,6 @@
 		je nn
 		cmp si,30
 		je nn
-    ; Get ball corners
-    ;MOV SI, BALL_X                    ; SI = ball_x (top-left corner)
-    ;MOV DI, BALL_Y                     ; DI = ball_y (top-left corner)
-
-    ;MOV BP, BALL_SIZE
-    ;ADD BP, BALL_X                     ; BP = ball_x + BALL_SIZE (top-right corner)
-	
-	;MOV SP, BALL_SIZE
-    ;ADD SP, BALL_Y                     ; SP = ball_y + BALL_SIZE (bottom-left corner)
 
     ; === Check Bottom Collision ===
     ; Bottom-left corner of the ball touching the top of the brick
@@ -297,10 +293,10 @@ neg_speed_y:
 
 
     mov bx, 8           ; Number of rows
-    mov si, 14          ; Number of columns
+    mov si, 16          ; Number of columns
 
     ; Loop through rows
-    check_row:
+    check_row:	
 	; First, check if collision can happen with this row, if yes, go prove that by checking the column of collision
 		;BALL_Y + BALL_SIZE + offset > BRICK_Y (top of brick) with (bottom left of ball)
         mov ax, BALL_Y
@@ -356,18 +352,38 @@ neg_speed_y:
     no_index:
         mov bx, 30
         mov si, 30
-        jmp finish
-
-    finish:
         pop dx
         pop cx
         pop ax
         ret
 
-	
+    finish:
+		mov ax,bx
+		mov cx, 9
+		mul cx 
+		add ax,si					;index is stored in ax
+		mov di,ax
 
+		mov ax,active_bricks[di]
+		cmp ax,0					;if it is zero means is not active brick
+		je no_index					;no collision happened
+
+		mov active_bricks[di],0		;if collision happens deactivate brick
+
+		mov cx,bricks_initial_x[si]
+		mov dx,bricks_initial_y[bx]
+		mov al,0
+		push bx
+		push si
+		call Brick		;and draw black brick 
+		pop si
+		pop bx 
+
+        pop dx
+        pop cx
+        pop ax
+        ret
 check_collision ENDP
-
 	END Move_Ball
 
 

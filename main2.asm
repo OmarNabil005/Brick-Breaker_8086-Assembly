@@ -43,8 +43,6 @@
 		je Check_time			
 
 		mov TIME_STORE,dl		;storing current time
-					
-		;clearscreen
 
 		Call Draw_B_Ball
 
@@ -53,14 +51,11 @@
 		Call Draw_Ball
 		
 
-
 		jmp Check_time			;go checking time again
 
 	; Exit program
 	MOV AH, 4Ch                  ; DOS interrupt to exit
 	INT 21h                      ; Call DOS interrupt
-	
-	
 	
 	MAIN ENDP
 	END MAIN
