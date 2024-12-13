@@ -1,1 +1,3 @@
-macros.asm
+*.EXE
+*.OBJ
+*.COM

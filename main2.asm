@@ -9,8 +9,10 @@
 	
 	extrn Move_Ball:FAR
 	extrn Draw_Ball:FAR
+	extrn Draw_B_Ball:FAR
 	extrn TIME_STORE:byte
 
+	extrn drawBricks:FAR
 
 	
 	.MODEL SMALL
@@ -31,6 +33,8 @@
 	int 10h   
 
 
+	Call drawBricks
+		
 	Check_time:
 		mov ah,2ch 				;get system time 
 		int 21h	   				;ch = hour | cl = min | dh = sec | dl = 1/100 secs 
@@ -39,20 +43,19 @@
 		je Check_time			
 
 		mov TIME_STORE,dl		;storing current time
-					
-		clearscreen
+
+		Call Draw_B_Ball
 
 		Call Move_Ball			
-
+		
 		Call Draw_Ball
+		
 
 		jmp Check_time			;go checking time again
 
 	; Exit program
 	MOV AH, 4Ch                  ; DOS interrupt to exit
 	INT 21h                      ; Call DOS interrupt
-	
-	
 	
 	MAIN ENDP
 	END MAIN
