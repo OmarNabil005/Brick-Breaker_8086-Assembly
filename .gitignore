@@ -1,2 +1,4 @@
-macros.asm
+*.EXE
+*.OBJ
+*.COM
 tasks.json
