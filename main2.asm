@@ -70,17 +70,17 @@
 
 		checkRight:
 		cmp ah, 4Dh
-		jne checkKey            ; if not right arrow, check next key
+		jne checkEsc            ; if not right arrow, check next key
 		call moveRight
 		jmp Check_time
 
 		checkEsc:
 		cmp ah, 1
-		jne moveball            ; if not esc, check next key
-		mov ah, 4Ch             ; exit program
+		jne moveball            ; if not esc, keep game going
+		jmp exit
 		moveball: jmp Check_time
 
-	; Exit program
+	exit:
 	MOV AH, 4Ch                  ; DOS interrupt to exit
 	INT 21h                      ; Call DOS interrupt
 	
