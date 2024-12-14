@@ -1,1 +1,5 @@
 macros.asm
+*.exe
+*.obj
+*.com
+.vscode
