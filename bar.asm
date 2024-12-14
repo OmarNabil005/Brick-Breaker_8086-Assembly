@@ -1,5 +1,3 @@
-public Bar
-
 clearScreen macro
     mov bh, 7h
     mov cx, 0h
@@ -8,6 +6,11 @@ clearScreen macro
     mov ax, 600h
     int 10h
 endm
+
+public Bar
+public moveLeft
+public moveRight
+public speed
 
 .MODEL SMALL
 .STACK 100h
@@ -43,7 +46,7 @@ Bar PROC FAR
         inc barX            ; start at X = 270
         cmp barX, 370d      ; end at X = 370 -> width = 100
         jna cont            ; handle jump out of range
-        jmp checkKey
+        jmp done
         cont:
 
     drawVertical:           ; inner loop (draws vertical lines)
@@ -60,10 +63,15 @@ Bar PROC FAR
 
     jmp drawVertical        ; repeat inner loop
 
-    moveLeft:
+    done:
+    ret
+
+Bar ENDP
+
+proc moveLeft FAR
     cmp barLeft, 0          ; dont go left if already hitting the edge
     jne eraseRightCol       ; handle jump out of range
-    jmp checkKey
+    jmp exit
 
     eraseRightCol:
         mov ah, 0Ch         ; draw black pixels over right column to erase it
@@ -100,12 +108,14 @@ Bar PROC FAR
     jnz moveLeft
     mov bl, speed
     mov speedCounter, bl    ; speedCounter = speed
-    jmp checkKey            ; check next movement
+    exit:
+    ret
+endp moveLeft
 
-    moveRight:
+proc moveRight FAR
     cmp barRight, 640d      ; dont go right if already hitting the edge
     jne drawRightCol
-    jmp checkKey
+    jmp exitRight
 
     drawRightCol:           
         mov ah, 0Ch         ; draw new gray pixels at right column
@@ -142,23 +152,8 @@ Bar PROC FAR
     jnz moveRight
     mov bl, speed
     mov speedCounter, bl    ; speedCounter = speed
-    jmp checkKey            ; check next movement
-                       
-    checkKey:               ; scan codes *** left arrow -> 4B, right arrow -> 4D , esc -> 1 
-    mov ah, 1               ; peek keyboard buffer
-    int 16h
-    jz  checkKey            ; jump to wherever you want later to keep logic going if no key was pressed
-    mov ah, 0               ; get key (and clear keyboard buffer)
-    int 16h
+    exitRight:
+    ret
+endp moveRight
 
-    cmp ah, 4Bh
-    jne checkRight          ; if not left arrow, check right arrow
-    jmp moveLeft
-
-    checkRight:
-    cmp ah, 4Dh
-    jne checkKey            ; if not right arrow, check next key
-    jmp moveRight
-
-Bar ENDP
 END Bar
