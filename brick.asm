@@ -1,11 +1,13 @@
 public brick
 
-EXTRN brick_width:word
-EXTRN brick_height:word
-
 .model small
+
+.data
+    brick_width EQU 32d					;bricks width
+    brick_height EQU 9d					;bricks height
 .code
 brick PROC FAR
+	
     MOV AH, 0Ch                     ;set interrupt variable
 	
 	PUSH BP							;store BP to save its value
