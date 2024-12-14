@@ -16,12 +16,12 @@ public speed
 .STACK 100h
 
 .DATA
-    barX dw 269d
-    barY dw 450d
-    barLeft dw 270d
-    barRight dw 370d
-    barTop dw 450d
-    barBottom dw 470d
+    barX dw 129d
+    barY dw 180d
+    barLeft dw 130d
+    barRight dw 189d
+    barTop dw 180d
+    barBottom dw 190d
     speed db 02h
     speedCounter db 02h
 .CODE
@@ -33,7 +33,7 @@ Bar PROC FAR
     clearScreen
 
     mov ah, 0h              ; enter video mode
-    mov al, 12h             ; 640 * 480 -> 16 colors 
+    mov al, 13h             ; 320 * 200 -> 256 colors 
     int 10h
 
     mov ah, 0Bh             ; set background color to black
@@ -44,7 +44,7 @@ Bar PROC FAR
         mov cx, barTop
         mov barY, cx        ; start at Y = 450
         inc barX            ; start at X = 270
-        cmp barX, 370d      ; end at X = 370 -> width = 100
+        cmp barX, 189d      ; end at X = 370 -> width = 100
         jna cont            ; handle jump out of range
         jmp done
         cont:
@@ -58,7 +58,7 @@ Bar PROC FAR
         int 10h
 
         inc barY
-        cmp barY, 470d      
+        cmp barY, 190d      
         je drawHorizontal   ; jump to outer loop if inner loop ended 
 
     jmp drawVertical        ; repeat inner loop
@@ -82,7 +82,7 @@ proc moveLeft FAR
         int 10h
 
         inc barY
-        cmp barY, 470d
+        cmp barY, 190d
         jne eraseRightCol
     
     dec barRight            ; move left
@@ -98,7 +98,7 @@ proc moveLeft FAR
         int 10h
 
         inc barY
-        cmp barY, 470d
+        cmp barY, 190d
         jne drawLeftCol
     
     dec barLeft             ; move left
@@ -113,7 +113,7 @@ proc moveLeft FAR
 endp moveLeft
 
 proc moveRight FAR
-    cmp barRight, 640d      ; dont go right if already hitting the edge
+    cmp barRight, 320d      ; dont go right if already hitting the edge
     jne drawRightCol
     jmp exitRight
 
@@ -126,7 +126,7 @@ proc moveRight FAR
         int 10h
 
         inc barY            
-        cmp barY, 470d
+        cmp barY, 190d
         jne drawRightCol
     
     inc barRight            ; move right
@@ -142,7 +142,7 @@ proc moveRight FAR
         int 10h
 
         inc barY
-        cmp barY, 470
+        cmp barY, 190d
         jne eraseLeftCol
     
     inc barLeft             ; move right
