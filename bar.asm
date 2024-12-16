@@ -1,3 +1,5 @@
+public Bar
+
 clearScreen macro
     mov bh, 7h
     mov cx, 0h
