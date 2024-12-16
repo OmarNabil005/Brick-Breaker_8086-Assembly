@@ -3,3 +3,5 @@ macros.asm
 *.obj
 *.com
 .vscode
+tasks.json
+
