@@ -9,16 +9,21 @@ clearScreen macro
     int 10h
 endm
 
+public Bar
+public moveLeft
+public moveRight
+public speed
+
 .MODEL SMALL
 .STACK 100h
 
 .DATA
-    barX dw 269d
-    barY dw 450d
-    barLeft dw 270d
-    barRight dw 370d
-    barTop dw 450d
-    barBottom dw 470d
+    barX dw 129d
+    barY dw 180d
+    barLeft dw 130d
+    barRight dw 189d
+    barTop dw 180d
+    barBottom dw 190d
     speed db 02h
     speedCounter db 02h
 .CODE
@@ -30,7 +35,7 @@ Bar PROC FAR
     clearScreen
 
     mov ah, 0h              ; enter video mode
-    mov al, 12h             ; 640 * 480 -> 16 colors 
+    mov al, 13h             ; 320 * 200 -> 256 colors 
     int 10h
 
     mov ah, 0Bh             ; set background color to black
@@ -41,9 +46,9 @@ Bar PROC FAR
         mov cx, barTop
         mov barY, cx        ; start at Y = 450
         inc barX            ; start at X = 270
-        cmp barX, 370d      ; end at X = 370 -> width = 100
+        cmp barX, 189d      ; end at X = 370 -> width = 100
         jna cont            ; handle jump out of range
-        jmp checkKey
+        jmp done
         cont:
 
     drawVertical:           ; inner loop (draws vertical lines)
@@ -55,15 +60,20 @@ Bar PROC FAR
         int 10h
 
         inc barY
-        cmp barY, 470d      
+        cmp barY, 190d      
         je drawHorizontal   ; jump to outer loop if inner loop ended 
 
     jmp drawVertical        ; repeat inner loop
 
-    moveLeft:
+    done:
+    ret
+
+Bar ENDP
+
+proc moveLeft FAR
     cmp barLeft, 0          ; dont go left if already hitting the edge
     jne eraseRightCol       ; handle jump out of range
-    jmp checkKey
+    jmp exit
 
     eraseRightCol:
         mov ah, 0Ch         ; draw black pixels over right column to erase it
@@ -74,7 +84,7 @@ Bar PROC FAR
         int 10h
 
         inc barY
-        cmp barY, 470d
+        cmp barY, 190d
         jne eraseRightCol
     
     dec barRight            ; move left
@@ -90,7 +100,7 @@ Bar PROC FAR
         int 10h
 
         inc barY
-        cmp barY, 470d
+        cmp barY, 190d
         jne drawLeftCol
     
     dec barLeft             ; move left
@@ -100,12 +110,14 @@ Bar PROC FAR
     jnz moveLeft
     mov bl, speed
     mov speedCounter, bl    ; speedCounter = speed
-    jmp checkKey            ; check next movement
+    exit:
+    ret
+endp moveLeft
 
-    moveRight:
-    cmp barRight, 640d      ; dont go right if already hitting the edge
+proc moveRight FAR
+    cmp barRight, 320d      ; dont go right if already hitting the edge
     jne drawRightCol
-    jmp checkKey
+    jmp exitRight
 
     drawRightCol:           
         mov ah, 0Ch         ; draw new gray pixels at right column
@@ -116,7 +128,7 @@ Bar PROC FAR
         int 10h
 
         inc barY            
-        cmp barY, 470d
+        cmp barY, 190d
         jne drawRightCol
     
     inc barRight            ; move right
@@ -132,7 +144,7 @@ Bar PROC FAR
         int 10h
 
         inc barY
-        cmp barY, 470
+        cmp barY, 190d
         jne eraseLeftCol
     
     inc barLeft             ; move right
@@ -142,23 +154,8 @@ Bar PROC FAR
     jnz moveRight
     mov bl, speed
     mov speedCounter, bl    ; speedCounter = speed
-    jmp checkKey            ; check next movement
-                       
-    checkKey:               ; scan codes *** left arrow -> 4B, right arrow -> 4D , esc -> 1 
-    mov ah, 1               ; peek keyboard buffer
-    int 16h
-    jz  checkKey            ; jump to wherever you want later to keep logic going if no key was pressed
-    mov ah, 0               ; get key (and clear keyboard buffer)
-    int 16h
+    exitRight:
+    ret
+endp moveRight
 
-    cmp ah, 4Bh
-    jne checkRight          ; if not left arrow, check right arrow
-    jmp moveLeft
-
-    checkRight:
-    cmp ah, 4Dh
-    jne checkKey            ; if not right arrow, check next key
-    jmp moveRight
-
-Bar ENDP
 END Bar

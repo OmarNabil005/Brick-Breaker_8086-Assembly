@@ -9,6 +9,7 @@
 
 	EXTRN bricks_initial_x:word
 	EXTRN bricks_initial_y:word
+	EXTRN lives:byte
 	EXTRN Brick:FAR
 	public TIME_STORE
 	public Move_Ball
@@ -104,6 +105,8 @@
 		sub ax, BALL_SIZE
 		sub ax, WINDOW_BOUNCE
 		mov ball_y, ax
+		dec lives
+		; jz end_game
 		;===================================
 		jmp neg_speed_y
 		dont_jump_this_y:
