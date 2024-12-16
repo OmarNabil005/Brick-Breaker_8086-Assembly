@@ -1,3 +1,12 @@
+ moveCursor MACRO row, col
+               mov dl, col
+               mov dh, row
+               mov bh, 0
+               mov ah, 02h
+               int 10h
+ENDM
+ 
+ 
                    extrn       Move_Ball:FAR
                    extrn       Draw_Ball:FAR
                    extrn       Draw_B_Ball:FAR
@@ -24,6 +33,7 @@
                    
 display_stats PROC NEAR
     ; Set data segment
+    push ds
                    MOV  AX, @DATA
                    MOV  DS, AX
 
@@ -40,23 +50,36 @@ display_stats PROC NEAR
     ;                LOOP clear_bottom      ; Repeat for all pixels
 
     ; Display Score
+                   mov cl,10
+                   moveCursor 23,cl
                    lea  dx, score_msg
                    call displayMessage
+                   mov cl,20
+                   moveCursor 23,cl
                    mov  ax, SCORE
                    call print_number
 
     ; Display Lives
+                    mov cl,30
+                    moveCursor 23,cl
                    lea  dx, lives_msg
                    call displayMessage
+                   mov cl,40
+                   moveCursor 23,cl
                    mov  ax, LIVES
                    call print_number
 
     ; Display Level
+                    mov cl,60
+                    moveCursor 23,cl
                    lea  dx, level_msg
                    call displayMessage
+                   mov cl,70
+                   moveCursor 23,cl
                    mov  ax, LEVEL
                    call print_number
 
+                    pop ds
                    RET
 display_stats ENDP
 
@@ -65,12 +88,14 @@ displayMessage PROC
 
                    mov  si, dx            ; Load string address into si
                    mov  ah, 0Eh           ; BIOS teletype function to display characters
-
+                
     display_loop:  
                    mov  al, [si]          ; Load character from string
                    cmp  al, '$'           ; Check for string termination
                    je   end_message
                    int  10h               ; Print character
+                   inc cl
+                   moveCursor 23,cl
                    inc  si                ; Move to next character in the string
                    jmp  display_loop
 

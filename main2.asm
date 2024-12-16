@@ -7,44 +7,36 @@ clearscreen macro
 	            int 10h      	; call the interrupt
 endm
 	
+	extrn display_stats:FAR
 	extrn Move_Ball:FAR
+	extrn menu:FAR
 	extrn Draw_Ball:FAR
 	extrn Draw_B_Ball:FAR
 	extrn Bar:FAR
 	extrn moveLeft:FAR
 	extrn moveRight:FAR
 	extrn TIME_STORE:byte
-	public lives
+	public live
 
 	extrn drawBricks:FAR
 
-	public MAIN
+	public GAME
 
 	
 	.MODEL SMALL
 	.STACK 100h
 
 	.DATA
-	lives db 03h
+	live db 03h
 	.CODE
-	MAIN PROC
-  
-	; Initialize data segment
-	           MOV         AX, @DATA
-	           MOV         DS, AX
-	
-	           clearscreen
-	
 
-	           mov         ah,00h       	;set video mode
-	           mov         al,13h       	;choose vedio mode
-	           int         10h
+	GAME proc far
 
-	           Call        Bar
-	           Call        drawBricks
-	           Call        display_stats
+	clearscreen
+			   	Call        Bar
+	            Call        drawBricks
+				 ;Call        display_stats
 
-		
 	Check_time:
 	           mov         ah,2ch       	;get system time
 	           int         21h          	;ch = hour | cl = min | dh = sec | dl = 1/100 secs
@@ -59,7 +51,7 @@ endm
 	           Call        Move_Ball
 		
 	           Call        Draw_Ball
-	           Call        display_stats
+	           ;Call        display_stats
 		
 	checkKey:               ; scan codes *** left arrow -> 4B, right arrow -> 4D , esc -> 1 
 		mov ah, 1               ; peek keyboard buffer
@@ -72,20 +64,41 @@ endm
 		cmp ah, 4Bh
 		jne checkRight          ; if not left arrow, check right arrow
 		call moveLeft
-		jmp Check_time
+		jmp checkKey
 
 		checkRight:
 		cmp ah, 4Dh
 		jne checkEsc            ; if not right arrow, check next key
 		call moveRight
-		jmp Check_time
+		jmp checkKey
 
 
 		checkEsc:
               cmp        ah, 1
               jne        moveball       ; if not esc, keep game going
-              jmp        exit
-              moveball:  jmp Check_time
+              jmp        exitt
+              moveball:  jmp checkKey
+
+		exitt: 
+		Ret
+	ENDP GAME
+	MAIN PROC
+  
+	; Initialize data segment
+	           MOV         AX, @DATA
+	           MOV         DS, AX
+	
+	           clearscreen
+
+
+	           mov         ah,00h       	;set video mode
+	           mov         al,13h       	;choose vedio mode
+	           int         10h
+
+			   Call        menu
+	           
+		
+	Call GAME
 
   ; Exit program
      exit:
@@ -93,6 +106,8 @@ endm
              INT         21h            ; Call DOS interrupt
 	
 MAIN ENDP
+
+
 	END MAIN
 
 

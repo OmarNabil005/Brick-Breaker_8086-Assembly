@@ -9,13 +9,17 @@ endm
 
 	EXTRN bricks_initial_x:word
 	EXTRN bricks_initial_y:word
-	EXTRN lives:byte
+	EXTRN live:byte
 	EXTRN Brick:FAR
 	extrn drawBricks:FAR
 	EXTRN SCORE:word
     EXTRN LIVES:word
     EXTRN LEVEL:word
     EXTRN BRICKS_LEFT:word
+	EXTRN barLeft:word
+	EXTRN barRight:word
+	EXTRN barTop:word
+	EXTRN barBottom:word
 
 	public TIME_STORE
 	public Move_Ball
@@ -34,6 +38,7 @@ endm
 	brick_width     EQU 32d                     	;bricks width
 	brick_height    EQU 9d                      	;bricks height
 
+	GAME_WINDOW     dw  10d      
 	WINDOW_WIDTH    dw  140h                    	;width of the window (320)
 	WINDOW_HEIGHT   dw  0c8h                    	;height of the window (200)
 	WINDOW_BOUNCE   dw  3h                      	;used to check collision early
@@ -66,8 +71,33 @@ Move_Ball PROC FAR
 	                    mov  ax,BALL_Y_SPEED
 	                    add  BALL_Y,ax               	;inc ball y pos with velocity
 
-		
+	;Ball_y + ballsize + WINDOW_BOUNCE> bartop && (ball_x < barRight && ball_x + BallSize > barLeft : collided
+						mov ax,WINDOW_BOUNCE
+						add ax,BALL_Y
+						add ax,BALL_SIZE				;check of y
+						cmp ax,barTop
+						jl  check_left_wall
 
+						mov ax, BALL_X
+						add ax,BALL_SIZE				;first x condition
+						cmp ax,barLeft
+						jl check_left_wall
+
+						mov ax,BALL_X
+						cmp ax,barRight
+						jg check_left_wall
+						
+
+	; =========to avoid gettings tuck========
+	                    mov  ax, barTop
+	                    sub  ax, BALL_SIZE
+	                    sub  ax, WINDOW_BOUNCE
+	                    mov  ball_y, ax
+						jmp neg_speed_y
+	;========================================
+
+
+	check_left_wall:
 	                    mov  ax,WINDOW_BOUNCE
 	                    cmp  BALL_X,ax
 	                    jge  dont_jump               	;if it collides with left wall
@@ -105,15 +135,17 @@ Move_Ball PROC FAR
 	                    mov  ax,WINDOW_HEIGHT
 	                    sub  ax,BALL_SIZE
 	                    sub  ax,WINDOW_BOUNCE
+						sub  ax,GAME_WINDOW
 	                    cmp  BALL_Y,ax
 	                    jle  dont_jump_this_y        	;if it collides with bottom wall
 	;======to avoid getting stuck======
 	                    mov  ax, WINDOW_HEIGHT
 	                    sub  ax, BALL_SIZE
 	                    sub  ax, WINDOW_BOUNCE
+						sub  ax,GAME_WINDOW
 	                    mov  ball_y, ax
 	;===================================
-	                    jmp  neg_speed_y
+	                    jmp  reset_position
 	dont_jump_this_y:   
 
 	;check_collision:
