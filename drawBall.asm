@@ -9,6 +9,7 @@ endm
 
 	EXTRN bricks_initial_x:word
 	EXTRN bricks_initial_y:word
+	EXTRN lives:byte
 	EXTRN Brick:FAR
 	extrn drawBricks:FAR
 	EXTRN SCORE:word
@@ -76,6 +77,7 @@ Move_Ball PROC FAR
 
 		
 
+
 	; BALL_X > window - ball_size - offset : collided
 	                    mov  ax,WINDOW_WIDTH
 	                    sub  ax,BALL_SIZE
@@ -122,6 +124,7 @@ Move_Ball PROC FAR
 	; Get brick boundaries
 
 	                    call check_collision         	;return brick y index in bx and x index in si
+
 		
 	;if didn't jump to nn, therefore collision occured (part of ball is inside) with brick[si][bx]
 	;let's figure out where did that occur

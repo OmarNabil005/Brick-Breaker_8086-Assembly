@@ -1,4 +1,7 @@
-*.EXE
-*.OBJ
-*.COM
+macros.asm
+*.exe
+*.obj
+*.com
+.vscode
 tasks.json
+
