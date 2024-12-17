@@ -22,7 +22,8 @@ displayMessage MACRO String
                    int 21h
 ENDM
 
-extrn MAIN:far
+extrn GAME:far
+public menu
 
 .model small
 .stack 100h
@@ -63,7 +64,7 @@ menu proc far
 
     start_game:    
     ; Load and execute the start program
-                   call           MAIN
+                   call           GAME
                    jmp            exit
 
     quit_game:     

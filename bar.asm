@@ -17,14 +17,19 @@ public speed
 .MODEL SMALL
 .STACK 100h
 
+public barLeft
+public barRight
+public barTop
+public barBottom
+
 .DATA
     barX dw 129d
-    barY dw 180d
+    barY dw 170d
     barLeft dw 130d
     barRight dw 189d
-    barTop dw 180d
-    barBottom dw 190d
-    speed db 02h
+    barTop dw 170d
+    barBottom dw 180d
+    speed db 04h
     speedCounter db 02h
 .CODE
 Bar PROC FAR
@@ -60,7 +65,7 @@ Bar PROC FAR
         int 10h
 
         inc barY
-        cmp barY, 190d      
+        cmp barY, 180d      
         je drawHorizontal   ; jump to outer loop if inner loop ended 
 
     jmp drawVertical        ; repeat inner loop
@@ -84,7 +89,7 @@ proc moveLeft FAR
         int 10h
 
         inc barY
-        cmp barY, 190d
+        cmp barY, 180d
         jne eraseRightCol
     
     dec barRight            ; move left
@@ -100,7 +105,7 @@ proc moveLeft FAR
         int 10h
 
         inc barY
-        cmp barY, 190d
+        cmp barY, 180d
         jne drawLeftCol
     
     dec barLeft             ; move left
@@ -128,7 +133,7 @@ proc moveRight FAR
         int 10h
 
         inc barY            
-        cmp barY, 190d
+        cmp barY, 180d
         jne drawRightCol
     
     inc barRight            ; move right
@@ -144,7 +149,7 @@ proc moveRight FAR
         int 10h
 
         inc barY
-        cmp barY, 190d
+        cmp barY, 180d
         jne eraseLeftCol
     
     inc barLeft             ; move right
