@@ -7,7 +7,7 @@ clearscreen macro
 	            int 10h      	; call the interrupt
 endm
 	
-	EXTRN Display_Stats:FAR
+	extrn display_stats:FAR
 	extrn Move_Ball:FAR
 	extrn menu:FAR
 	extrn Draw_Ball:FAR
@@ -16,6 +16,7 @@ endm
 	extrn moveLeft:FAR
 	extrn moveRight:FAR
 	extrn TIME_STORE:byte
+	public live
 	public SCORE
 	public LIVES
 	public LEVEL
@@ -30,10 +31,12 @@ endm
 	.STACK 100h
 
 .DATA
+	live        db 03h
 	LIVES       dw 3
 	LEVEL       dw 1
 	SCORE       dw 0
 	BRICKS_LEFT dw 45
+
 .CODE
 
 GAME proc far
@@ -57,8 +60,7 @@ GAME proc far
 	           Call        Move_Ball
 		
 	           Call        Draw_Ball
-			   
-	           Call        Display_Stats
+	           Call        Display_stats
 		
 	checkKey:                           	; scan codes *** left arrow -> 4B, right arrow -> 4D , esc -> 1
 	           mov         ah, 1        	; peek keyboard buffer
@@ -83,7 +85,7 @@ GAME proc far
 	checkEsc:  
 	           cmp         ah, 1
 	           jne         moveball     	; if not esc, keep game going
-	           call        menu
+	           jmp         exitt
 	moveball:  jmp         checkKey
 
 	exitt:     
@@ -103,15 +105,14 @@ MAIN PROC
 	           int         10h
 
 	           Call        menu
-		
 	           
+		
+	           Call        GAME
 
-	; ; Exit program
-	; exit:
-	;            MOV         AH, 4Ch      	; DOS interrupt to exit
-	;            INT         21h          	; Call DOS interrupt
+	; Exit program
+	exit:      
+	           MOV         AH, 4Ch      	; DOS interrupt to exit
+	           INT         21h          	; Call DOS interrupt
 	
 MAIN ENDP
 END MAIN
-
-

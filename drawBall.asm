@@ -142,6 +142,7 @@ Move_Ball PROC FAR
 	                    sub  ax, BALL_SIZE
 	                    sub  ax, WINDOW_BOUNCE
 	                    sub  ax,GAME_WINDOW
+	                    dec  LIVES
 	                    mov  ball_y, ax
 	;===================================
 	                    jmp  reset_position
@@ -238,7 +239,7 @@ Move_Ball PROC FAR
 	                    MOV  BALL_Y, 3               	; Reset ball position slightly below top boundary
 	no_position_fix:    
 	                    RET
-
+	
 
 Move_Ball ENDP
 
@@ -430,22 +431,25 @@ check_collision PROC near
 	                    ret
 check_collision ENDP
 level_up PROC NEAR
+	                    push AX
+	                    push bx
 	                    inc  LEVEL                   	; Increase level
 	                    mov  BRICKS_LEFT, 45         	; Reset brick count
 
 	
 	                    mov  ax, BALL_X_SPEED        	;Increase ball speed for higher difficulty
-	                    add  ax, 1                   	; Increment X speed
+	                    mov  bx,2
+	                    mul  bx                      	; Increment X speed
 	                    mov  BALL_X_SPEED, ax
 
 	                    mov  ax, BALL_Y_SPEED
-	                    add  ax, 1                   	; Increment Y speed
+	                    mul  bx                      	; Increment Y speed
 	                    mov  BALL_Y_SPEED, ax
-	
-	                    call drawBricks              	; Redraw all bricks
+
+	                    pop  bx
+	                    pop  ax
+	                    
 	                    ret
 level_up ENDP
 
 END Move_Ball
-
-
