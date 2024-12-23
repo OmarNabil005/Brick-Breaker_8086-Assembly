@@ -1,3 +1,25 @@
+initPort MACRO
+    ;Set Divisor Latch Access Bit
+    MOV DX, 3FBh 				; Line Control Register
+    MOV AL, 10000000b			;Set Divisor Latch Access Bit
+    OUT DX, AL					;Out it
+	
+    ;Set LSB byte of the Baud Rate Divisor Latch register.
+    MOV DX, 3F8h			
+    MOV AL, 0Ch			
+    OUT DX, AL
+
+    ;Set MSB byte of the Baud Rate Divisor Latch register.
+    MOV DX, 3F9h
+    MOV AL, 00h
+    OUT DX, AL
+
+    ;Set port configuration
+    MOV DX, 3FBh
+    MOV AL, 00011011b
+    OUT DX, AL
+ENDM
+
 clearscreen macro
 	            MOV ax, 0600h	; Scroll up intterupt
 	            MOV bh, 00h
@@ -46,68 +68,115 @@ GAME proc far
 				mov		 ax, @data
 				mov		 ds, ax
 
-	           clearscreen
-			   Call		   resetAll
-	           Call        Display_Stats
-	           Call        drawBricks
-	           Call        Bar
+	clearscreen
+	Call		   resetAll
+	Call        Display_Stats
+	Call        drawBricks
+	Call        Bar
+	initPort
 
 	Check_time:
-	           mov         ah,2ch       	;get system time
-	           int         21h          	;ch = hour | cl = min | dh = sec | dl = 1/100 secs
+		mov  ah,2ch       	;get system time
+		int  21h          	;ch = hour | cl = min | dh = sec | dl = 1/100 secs
 
-	           cmp         dl,TIME_STORE	;comparing current time with prev one
-	           je          Check_time
+		cmp  dl,TIME_STORE	;comparing current time with prev one
+		je   Check_time
 
-	           mov         TIME_STORE,dl	;storing current time
+		mov  TIME_STORE,dl	;storing current time
 
-	           Call        Draw_B_Ball
+		Call Draw_B_Ball
 
-	           Call        Move_Ball
-		
-	           Call        Draw_Ball
-	           Call        Display_stats
-		
-	checkKey:                           	; scan codes *** left arrow -> 4B, right arrow -> 4D , esc -> 1
-	           mov         ah, 1        	; peek keyboard buffer
-	           int         16h
-	           jnz         get_key      	; jump to wherever you want later to keep logic going if no key was pressed
-	           jmp         Check_time
-	get_key:   mov         ah, 0        	; get key (and clear keyboard buffer)
-	           int         16h
-
-	           cmp         ah, 4Bh
-	           jne         checkRight   	; if not left arrow, check right arrow
-	           call        movePlayerOneLeft
-	           jmp         checkKey
-
-	checkRight:
-	           cmp         ah, 4Dh
-	           jne         checkPlayerTwoLeft     	; if not right arrow, check next key
-	           call        movePlayerOneRight
-	           jmp         checkKey
-
-	checkPlayerTwoLeft:
-			   cmp         ah, 1Eh
-	           jne         checkPlayerTwoRight
-	           call        movePlayerTwoLeft
-	           jmp         checkKey
+		Call Move_Ball
 	
-	checkPlayerTwoRight:
-			   cmp         ah, 20h
-	           jne         checkEsc
-	           call        movePlayerTwoRight
-	           jmp         checkKey
-
-	checkEsc:  
-	           cmp         ah, 1
-	           jne         moveball     	; if not esc, keep game going
-	           jmp         exitt
-	moveball:  jmp         checkKey
+		Call Draw_Ball
+		Call Display_stats
+		
+		CALL check_local
+		
+		CALL check_remote
+		jmp check_time
+	;moveball:  jmp         checkKey
 
 	exitt:     
 	           Ret
 	           ENDP        GAME
+
+check_local proc
+	checkKey:; scan codes *** left arrow -> 4B, right arrow -> 4D , esc -> 1
+		mov         ah, 1        	; peek keyboard buffer
+		int         16h
+		jnz         get_key      	; jump to wherever you want later to keep logic going if no key was pressed
+		jmp         end_local
+		;Key exists
+		
+	get_key:
+		mov         ah, 0        	; get key (and clear keyboard buffer)
+		int         16h
+		;;;;;;;SENDING KEY TO PORT;;;;;;;;;;;;;
+		
+		mov dx,3FDH 			;Line Status Register
+		in al , dx 				;Read Line Status
+		AND al , 00100000b
+		jz end_local          	;Not empty
+		mov dx, 3F8H			;Transmit data register
+		mov al, ah       		;put the data into al
+		out dx, al         		;sending the data
+		;;;;;;;;;;;;;;;;;;;;;;;;;;
+		cmp         ah, 4Bh
+		jne         checkRight   	; if not left arrow, check right arrow
+		;left arrow key
+		
+		call        movePlayerOneLeft
+		jmp         end_local
+
+	checkRight:
+		cmp         ah, 4Dh
+		jne         checkEsc     	; if not right arrow, check next key
+		;right arrow key
+		;send right arrow to port
+		call        movePlayerOneRight
+		jmp         end_local
+	checkEsc:  
+		cmp         ah, 1
+		jne         end_local     	; if not esc, keep game going
+		;jmp         exitt
+	end_local:
+	
+	ret
+ check_local ENDP
+ 
+ check_remote PROC
+		MOV DX, 3FDh		;line status register
+		in AL, DX			;take from the line register into AL
+		AND al, 1			;check if its not empty
+		JZ exit_remote		;if it's empty, go recieve mode again (loop)
+	; status register is not empty, theres data in the recieve com port
+		MOV DX, 03F8h
+		in al, dx		;take key from the port, store in al
+		
+		cmp         al, 4Bh
+		jne         checkRightRemote   	; if not left arrow, check right arrow
+		;left arrow key
+		;send left arrow to port
+		
+		call        movePlayerTwoLeft
+		jmp         exit_remote
+
+	checkRightRemote:
+		cmp         al, 4Dh
+		jne         checkEscRemote     	; if not right arrow, check next key
+		;right arrow key
+		;send right arrow to port
+		call        movePlayerTwoRight
+		jmp         exit_remote
+		
+	checkEscRemote:  
+		cmp         al, 1	;escape
+		je exitt			;if escape, exit
+		;jne         moveball     	; if not esc, keep game going
+ exit_remote:
+	ret
+ check_remote ENDP
 MAIN PROC
   
 	; Initialize data segment
