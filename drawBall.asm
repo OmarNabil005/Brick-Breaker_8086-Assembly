@@ -17,8 +17,10 @@ endm
     EXTRN LIVES:word
     EXTRN LEVEL:word
     EXTRN BRICKS_LEFT:word
-	EXTRN barLeft:word
-	EXTRN barRight:word
+	EXTRN playerOneBarLeft:word
+	EXTRN playerTwoBarLeft:word
+	EXTRN playerOneBarRight:word
+	EXTRN playerTwoBarRight:word
 	EXTRN barTop:word
 	EXTRN barBottom:word
 
@@ -46,10 +48,10 @@ endm
 	WINDOW_BOUNCE   dw  3h                      	;used to check collision early
 
 	BALL_X          dw  0a0h                    	;x position of the ball
-	BALL_ORIGINAL_X dw  0a0h                    	;x original position
+	BALL_ORIGINAL_X equ  0a0h                    	;x original position
 
 	BALL_Y          dw  64h                     	;y position of the ball
-	BALL_ORIGINAL_Y dw  64h                     	;y original position
+	BALL_ORIGINAL_Y equ  64h                     	;y original position
 
 	BALL_SIZE       dw  04h                     	;size of the ball
 
@@ -81,15 +83,39 @@ Move_Ball PROC FAR
 	                    add  ax,BALL_Y
 	                    add  ax,BALL_SIZE            	;check of y
 	                    cmp  ax,barTop
+	                    jl   checkSecondBar
+
+	                    mov  ax, BALL_X
+	                    add  ax,BALL_SIZE            	;first x condition
+	                    cmp  ax,playerOneBarLeft
+	                    jl   checkSecondBar
+
+	                    mov  ax,BALL_X
+	                    cmp  ax,playerOneBarRight
+	                    jg   checkSecondBar
+						
+
+	; =========to avoid gettings tuck========
+	                    mov  ax, barTop
+	                    sub  ax, BALL_SIZE
+	                    sub  ax, WINDOW_BOUNCE
+	                    mov  ball_y, ax
+	                    jmp  neg_speed_y
+	;========================================
+	checkSecondBar:
+						mov  ax,WINDOW_BOUNCE
+	                    add  ax,BALL_Y
+	                    add  ax,BALL_SIZE            	;check of y
+	                    cmp  ax,barTop
 	                    jl   check_left_wall
 
 	                    mov  ax, BALL_X
 	                    add  ax,BALL_SIZE            	;first x condition
-	                    cmp  ax,barLeft
+	                    cmp  ax,playerTwoBarLeft
 	                    jl   check_left_wall
 
 	                    mov  ax,BALL_X
-	                    cmp  ax,barRight
+	                    cmp  ax,playerTwoBarRight
 	                    jg   check_left_wall
 						
 
@@ -100,6 +126,7 @@ Move_Ball PROC FAR
 	                    mov  ball_y, ax
 	                    jmp  neg_speed_y
 	;========================================
+
 
 
 	check_left_wall:    
@@ -450,7 +477,6 @@ level_up PROC NEAR
     call resetBallSpeed
     call resetActiveBricks
 
-    
     ; Increase difficulty
     mov  ax, LEVEL              ; Load current level
     add  BALL_X_SPEED, ax       ; Proportional speed increase
