@@ -23,6 +23,7 @@ displayMessage MACRO String
 ENDM
 
 extrn GAME:far
+extrn chat:far
 public menu
 
 .model small
@@ -57,7 +58,7 @@ menu proc far
                    cmp            al, '1'
                    je             start_game
                    cmp            al, '2'
-                   je             quit_game
+                   je             exit
                    cmp            al, '3'
                    je             chat_function
                    jmp            wait_for_input
@@ -66,15 +67,11 @@ menu proc far
     ; Load and execute the start program
                    call           GAME
                    jmp            exit
-
-    quit_game:     
-    ; Code to quit the game
-                   mov            ah, 4Ch
-                   int            21h
+  
 
     chat_function: 
     ; Load and execute the chat program
-    ;call chat
+                   call           chat
                    int            21h
                    jmp            exit
 

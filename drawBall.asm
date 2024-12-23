@@ -9,7 +9,6 @@ endm
 
 	EXTRN bricks_initial_x:word
 	EXTRN bricks_initial_y:word
-	EXTRN live:byte
 	EXTRN Brick:FAR
 	extrn drawBricks:FAR
 	EXTRN SCORE:word
@@ -38,7 +37,7 @@ endm
 	brick_width     EQU 32d                     	;bricks width
 	brick_height    EQU 9d                      	;bricks height
 
-	GAME_WINDOW     dw  10d      
+	GAME_WINDOW     dw  10d
 	WINDOW_WIDTH    dw  140h                    	;width of the window (320)
 	WINDOW_HEIGHT   dw  0c8h                    	;height of the window (200)
 	WINDOW_BOUNCE   dw  3h                      	;used to check collision early
@@ -72,20 +71,20 @@ Move_Ball PROC FAR
 	                    add  BALL_Y,ax               	;inc ball y pos with velocity
 
 	;Ball_y + ballsize + WINDOW_BOUNCE> bartop && (ball_x < barRight && ball_x + BallSize > barLeft : collided
-						mov ax,WINDOW_BOUNCE
-						add ax,BALL_Y
-						add ax,BALL_SIZE				;check of y
-						cmp ax,barTop
-						jl  check_left_wall
+	                    mov  ax,WINDOW_BOUNCE
+	                    add  ax,BALL_Y
+	                    add  ax,BALL_SIZE            	;check of y
+	                    cmp  ax,barTop
+	                    jl   check_left_wall
 
-						mov ax, BALL_X
-						add ax,BALL_SIZE				;first x condition
-						cmp ax,barLeft
-						jl check_left_wall
+	                    mov  ax, BALL_X
+	                    add  ax,BALL_SIZE            	;first x condition
+	                    cmp  ax,barLeft
+	                    jl   check_left_wall
 
-						mov ax,BALL_X
-						cmp ax,barRight
-						jg check_left_wall
+	                    mov  ax,BALL_X
+	                    cmp  ax,barRight
+	                    jg   check_left_wall
 						
 
 	; =========to avoid gettings tuck========
@@ -93,11 +92,11 @@ Move_Ball PROC FAR
 	                    sub  ax, BALL_SIZE
 	                    sub  ax, WINDOW_BOUNCE
 	                    mov  ball_y, ax
-						jmp neg_speed_y
+	                    jmp  neg_speed_y
 	;========================================
 
 
-	check_left_wall:
+	check_left_wall:    
 	                    mov  ax,WINDOW_BOUNCE
 	                    cmp  BALL_X,ax
 	                    jge  dont_jump               	;if it collides with left wall
@@ -135,14 +134,15 @@ Move_Ball PROC FAR
 	                    mov  ax,WINDOW_HEIGHT
 	                    sub  ax,BALL_SIZE
 	                    sub  ax,WINDOW_BOUNCE
-						sub  ax,GAME_WINDOW
+	                    sub  ax,GAME_WINDOW
 	                    cmp  BALL_Y,ax
 	                    jle  dont_jump_this_y        	;if it collides with bottom wall
 	;======to avoid getting stuck======
 	                    mov  ax, WINDOW_HEIGHT
 	                    sub  ax, BALL_SIZE
 	                    sub  ax, WINDOW_BOUNCE
-						sub  ax,GAME_WINDOW
+	                    sub  ax,GAME_WINDOW
+	                    dec  LIVES
 	                    mov  ball_y, ax
 	;===================================
 	                    jmp  reset_position
@@ -239,7 +239,7 @@ Move_Ball PROC FAR
 	                    MOV  BALL_Y, 3               	; Reset ball position slightly below top boundary
 	no_position_fix:    
 	                    RET
-
+	
 
 Move_Ball ENDP
 
@@ -431,22 +431,25 @@ check_collision PROC near
 	                    ret
 check_collision ENDP
 level_up PROC NEAR
+	                    push AX
+	                    push bx
 	                    inc  LEVEL                   	; Increase level
 	                    mov  BRICKS_LEFT, 45         	; Reset brick count
 
 	
 	                    mov  ax, BALL_X_SPEED        	;Increase ball speed for higher difficulty
-	                    add  ax, 1                   	; Increment X speed
+	                    mov  bx,2
+	                    mul  bx                      	; Increment X speed
 	                    mov  BALL_X_SPEED, ax
 
 	                    mov  ax, BALL_Y_SPEED
-	                    add  ax, 1                   	; Increment Y speed
+	                    mul  bx                      	; Increment Y speed
 	                    mov  BALL_Y_SPEED, ax
-	
-	                    call drawBricks              	; Redraw all bricks
+
+	                    pop  bx
+	                    pop  ax
+	                    
 	                    ret
 level_up ENDP
 
-	END Move_Ball
-
-
+END Move_Ball

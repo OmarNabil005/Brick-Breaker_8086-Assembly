@@ -1,137 +1,165 @@
- moveCursor MACRO row, col
-               mov dl, col
-               mov dh, row
-               mov bh, 0
-               mov ah, 02h
-               int 10h
-ENDM
- 
- 
-                   extrn       Move_Ball:FAR
-                   extrn       Draw_Ball:FAR
-                   extrn       Draw_B_Ball:FAR
-                   extrn       drawBricks:FAR
-                   EXTRN SCORE:word
-                   EXTRN LIVES:word
-                   EXTRN LEVEL:word
-                   EXTRN BRICKS_LEFT:word 
-                   
-                   public      display_stats
+extrn SCORE: word
+extrn LEVEL: word
+extrn LIVES: word
 
+public Display_Stats
 
 .MODEL SMALL
 .STACK 100h
-
 .DATA
-    score_msg db "Score: $", 0
-    lives_msg db " Lives: $", 0
-    level_msg db " Level: $", 0
-    buffer    db 6 dup (0)
-   
-
+    ScoreText   DB 'Score: $'
+    LivesText   DB 'Lives: $'
+    LevelText   DB 'Level: $'
+    
+    ScoreBuffer DB 6 DUP('$')    ; Buffer for score (max 5 digits + '$')
+    LivesBuffer DB 6 DUP('$')    ; Buffer for lives
+    LevelBuffer DB 6 DUP('$')    ; Buffer for level
 .CODE
-                   
-display_stats PROC NEAR
-    ; Set data segment
-    push ds
-                   MOV  AX, @DATA
-                   MOV  DS, AX
+.STARTUP
 
-    ; ; Clear the bottom portion of the screen for stats display (approx. 5% of 200 = 10 pixels)
-    ;                MOV  AX, 0A000h        ; Base address of video memory
-    ;                MOV  ES, AX
-    ;                MOV  DI, 320 * 190     ; Calculate offset for row 190
+    ; Procedure to convert a 16-bit number to decimal string
+Convert_Number PROC NEAR
+    ; Input: AX = number to convert
+    ; Output: Converts number to decimal string at DS:DI
+                       push bx
+                       push cx
+                       push dx
 
-    ;                MOV  CX, 320 * 10      ; Clear 10 rows (total area for stats)
-    ;                XOR  AX, AX            ; Clear the pixels (black color)
-    ; clear_bottom:
-    ;                MOV  [ES:DI], AX       ; Clear pixel at DI
-    ;                ADD  DI, 2             ; Move to next pixel (16-bit)
-    ;                LOOP clear_bottom      ; Repeat for all pixels
+                       mov  bx, 10                    ; Divisor
+                       mov  cx, 0                     ; Counter for digits
 
-    ; Display Score
-                   mov cl,10
-                   moveCursor 23,cl
-                   lea  dx, score_msg
-                   call displayMessage
-                   mov cl,20
-                   moveCursor 23,cl
-                   mov  ax, SCORE
-                   call print_number
+convert_loop:      
+                       xor  dx, dx                    ; Clear high word for division
+                       div  bx                        ; Divide AX by 10
+                       add  dl, '0'                   ; Convert remainder to ASCII
+                       push dx                        ; Store digit on stack
+                       inc  cx                        ; Increment digit count
+                       test ax, ax                    ; Check if quotient is zero
+                       jnz  convert_loop              ; Continue if not zero
 
-    ; Display Lives
-                    mov cl,30
-                    moveCursor 23,cl
-                   lea  dx, lives_msg
-                   call displayMessage
-                   mov cl,40
-                   moveCursor 23,cl
-                   mov  ax, LIVES
-                   call print_number
+store_loop:        
+                       pop  dx                        ; Retrieve digit
+                       mov  [di], dl                  ; Store in buffer
+                       inc  di                        ; Move to next buffer position
+                       loop store_loop
 
-    ; Display Level
-                    mov cl,60
-                    moveCursor 23,cl
-                   lea  dx, level_msg
-                   call displayMessage
-                   mov cl,70
-                   moveCursor 23,cl
-                   mov  ax, LEVEL
-                   call print_number
+                       mov  byte ptr [di], '$'        ; Terminate string with '$'
+    
+                       pop  dx
+                       pop  cx
+                       pop  bx
+                       ret
+Convert_Number ENDP
 
-                    pop ds
-                   RET
-display_stats ENDP
+    ; Procedure to set the cursor position
+Set_Cursor PROC NEAR
+    ; Input:
+    ; DH = row
+    ; DL = column
+                       push ax
+                       push bx
 
-displayMessage PROC
-                   push si                ; Save si register
+                       mov  ah, 02h
+                       mov  bh, 0                     ; Page number
+                       int  10h
 
-                   mov  si, dx            ; Load string address into si
-                   mov  ah, 0Eh           ; BIOS teletype function to display characters
-                
-    display_loop:  
-                   mov  al, [si]          ; Load character from string
-                   cmp  al, '$'           ; Check for string termination
-                   je   end_message
-                   int  10h               ; Print character
-                   inc cl
-                   moveCursor 23,cl
-                   inc  si                ; Move to next character in the string
-                   jmp  display_loop
+                       pop  bx
+                       pop  ax
+                       ret
+Set_Cursor ENDP
 
-    end_message:   
-                   pop  si                ; Restore si register
-                   ret
-displayMessage ENDP
+    ; Procedure to display a string at a specific screen position
+Display_String PROC NEAR
+    ; Input:
+    ; DS:DX = string address
+                       push ax
+                       push bx
 
-print_number PROC NEAR
-                   push ax
-                   push bx
-                   push dx
-                   xor  bx, bx
-                   mov  bx, 10            ; Base 10
+    ; Display string
+                       mov  ah, 09h
+                       int  21h
 
-    convert_digit: 
-                   xor  dx, dx
-                   div  bx                ; Divide AX by 10
-                   add  dl, '0'           ; Convert remainder to ASCII
-                   push dx
-                   test ax, ax
-                   jnz  convert_digit
+                       pop  bx
+                       pop  ax
+                       ret
+Display_String ENDP
 
-    print_digits:  
-                   pop  dx
-                   mov  ah, 0Eh
-                   mov  al, dl
-                   int  10h
-                   cmp  sp, 0
-                   jne  print_digits
+    ; Procedure to display game statistics
+Display_Stats PROC FAR
+                       push ax
+                       push bx
+                       push cx
+                       push dx
+                       push di
+                       push es
 
-                   pop  dx
-                   pop  bx
-                   pop  ax
-                   ret
-print_number ENDP
+    ; Save current data segment
+                       mov  ax, @data
+                       mov  ds, ax
+                       mov  es, ax
 
+    ; Prepare buffers for converted numbers
+                       lea  di, ScoreBuffer
+                       mov  ax, SCORE
+                       call Convert_Number
 
-END display_stats
+                       lea  di, LivesBuffer
+                       mov  ax, LIVES
+                       call Convert_Number
+
+                       lea  di, LevelBuffer
+                       mov  ax, LEVEL
+                       call Convert_Number
+
+    ; Display Score Label
+                       mov  dh, 23                    ; Row 23 (bottom of screen)
+                       mov  dl, 0                     ; Column 5
+                       call Set_Cursor
+                       lea  dx, ScoreText
+                       call Display_String
+
+    ; Display Score Value
+                       mov  dh, 23
+                       mov  dl, 6                    ; Column right after 'Score:'
+                       call Set_Cursor
+                       lea  dx, ScoreBuffer
+                       call Display_String
+
+    ; Display Lives Label
+                       mov  dh, 23
+                       mov  dl, 10                    ; Column for lives label
+                       call Set_Cursor
+                       lea  dx, LivesText
+                       call Display_String
+
+    ; Display Lives Value
+                       mov  dh, 23
+                       mov  dl, 19                    ; Column right after 'Lives:'
+                       call Set_Cursor
+                       lea  dx, LivesBuffer
+                       call Display_String
+
+    ; Display Level Label
+                       mov  dh, 23
+                       mov  dl, 22                    ; Column for level label
+                       call Set_Cursor
+                       lea  dx, LevelText
+                       call Display_String
+
+    ; Display Level Value
+                       mov  dh, 23
+                       mov  dl, 28                    ; Column right after 'Level:'
+                       call Set_Cursor
+                       lea  dx, LevelBuffer
+                       call Display_String
+
+                       pop  es
+                       pop  di
+                       pop  dx
+                       pop  cx
+                       pop  bx
+                       pop  ax
+                       ret
+Display_Stats ENDP
+
+END Display_Stats

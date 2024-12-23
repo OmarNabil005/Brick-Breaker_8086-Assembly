@@ -1,178 +1,271 @@
+public chat
+
 .MODEL small
 .STACK 100h
-.data
-char db ?       ; Character from keyboard
-value db ?      ; Character from UART
-errorMsg db 'Overrun error detected!$'
 
-.code
+.DATA
+    goodbyeMsg   DB 'Goodbye!', 0AH, 0DH, "$"
 
-checkKey proc
-    mov ax, @data
-    mov ds, ax
-    mov ah, 01h         ; Check if key is pressed
-    int 16h
-    jz checkUART        ; If no key is pressed, check UART again
+    ; Data Buffers
+    localChar    DB ?                            ; Stores the local character typed
+    receivedChar DB ?                            ; Stores the received character
+    localRow     DB 0                            ; Cursor row for local input
+    localCol     DB 0                            ; Cursor column for local input
+    remoteRow    DB 13                           ; Cursor row for remote input (starts at row 13)
+    remoteCol    DB 0                            ; Cursor column for remote input
+    exitFlag     DB 0                            ; Flag to indicate program exit
 
-    mov ah, 0h          ; Read the key
-    int 16h
-    mov char, al
+.CODE
+Initialize_UART PROC
+                          mov  dx, 3FBh                 ; Line Control Register
+                          mov  al, 10000000b            ; Set Divisor Latch Access Bit
+                          out  dx, al
 
-    ; Check if the character is Enter
-    cmp char, 0Dh
-    je handleEnterKey
+                          mov  dx, 3F8h                 ; Baud Rate Divisor LSB
+                          mov  al, 0Ch                  ; 9600 baud
+                          out  dx, al
 
-    ; Check if the character is ESC
-    cmp char, 1Bh
-    je sendEsc
+                          mov  dx, 3F9h                 ; Baud Rate Divisor MSB
+                          mov  al, 00h
+                          out  dx, al
 
-    mov ah, 2           ; Print the character
-    mov dl, char
-    int 21h
+                          mov  dx, 3FBh                 ; Line Control Register
+                          mov  al, 00011011b            ; 8 data bits, no parity, 1 stop bit
+                          out  dx, al
+                          ret
+Initialize_UART ENDP
 
-    ; Check that Transmitter Holding Register is Empty
-    mov dx, 3FDH        ; Line Status Register
-WaitLoop:
-    in al, dx           ; Read Line Status
-    and al, 00100000b
-    jz WaitLoop
+Set_Cursor PROC
+                          mov  ah, 02h                  ; BIOS function to set cursor position
+                          mov  bh, 0                    ; Video page number
+                          int  10h
+                          ret
+Set_Cursor ENDP
 
-    ; Send the character to UART
-    mov dx, 3F8H        ; Transmit Data Register
-    mov al, char
-    out dx, al
+Display_Char PROC
+                          push ax
+                          push bx
+                          push cx
+                          push dx
 
-    jmp checkUART
+                          mov  ah, 09h                  ; BIOS function to write character/attribute
+                          mov  al, receivedChar         ; Character to display
+                          mov  bh, 0                    ; Video page number
+                          mov  bl, 0Eh                  ; Attribute: red text on black background
+                          mov  cx, 1                    ; Write the character once
+                          int  10h                      ; Call BIOS interrupt
 
-handleEnterKey:
-    ; Send newline to screen
-    mov ah, 2
-    mov dl, 0Dh         ; Carriage return
-    int 21h
-    mov dl, 0Ah         ; Line feed
-    int 21h
+                          pop  dx
+                          pop  cx
+                          pop  bx
+                          pop  ax
+                          ret
+Display_Char ENDP
 
-    ; Send newline to UART
-    mov dx, 3FDH        ; Line Status Register
-WaitForEmptyCR:
-    in al, dx
-    and al, 00100000b
-    jz WaitForEmptyCR
+Display_Char_coloured PROC
+                          push ax
+                          push bx
+                          push cx
+                          push dx
 
-    mov dx, 3F8H        ; Transmit Data Register
-    mov al, 0Dh
-    out dx, al
+                          mov  ah, 09h                  ; BIOS function to write character/attribute
+                          mov  al, localChar            ; Character to display
+                          mov  bh, 0                    ; Video page number
+                          mov  bl, 0Ah                  ; Attribute: red text on black background
+                          mov  cx, 1                    ; Write the character once
+                          int  10h                      ; Call BIOS interrupt
 
-WaitForEmptyLF:
-    in al, dx
-    and al, 00100000b
-    jz WaitForEmptyLF
+                          pop  dx
+                          pop  cx
+                          pop  bx
+                          pop  ax
+                          ret
+Display_Char_coloured ENDP
 
-    mov al, 0Ah
-    out dx, al
 
-    jmp checkUART
+Wait_UART_Tx PROC
+                          mov  dx, 3FDh                 ; Line Status Register
+    Wait_UART_Tx_Loop:    in   al, dx                   ; Check Transmitter Holding Register
+                          and  al, 00100000b            ; Check if empty
+                          jz   Wait_UART_Tx_Loop        ; Wait until ready
+                          ret
+Wait_UART_Tx ENDP
 
-checkUART:
-    ; Check if UART has data ready
-    mov dx, 3FDH        ; Line Status Register
-    in al, dx
+Send_Exit_Signal PROC
+    ; Send ESC character via UART to signal exit to receiver
+                          call Wait_UART_Tx             ; Ensure UART is ready
 
-    ; Check for overrun error
-    and al, 00000010b
-    jz UARTNoError      ; No error, proceed
-    call handleError    ; Handle overrun error
+                          mov  dx, 3F8h                 ; Transmit Data Register
+                          mov  al, 1Bh                  ; ESC character
+                          out  dx, al                   ; Send character
+                          ret
+Send_Exit_Signal ENDP
 
-UARTNoError:
-    mov dx, 3FDH        ; Line Status Register
-    in al, dx
-    and al, 1
-    jz checkKey         ; If no data, check keyboard again
+Handle_Keyboard_Input PROC
+                          mov  ah, 01h                  ; Check if key is in keyboard buffer
+                          int  16h
+                          jz   No_Key                   ; No key pressed, skip to UART check
 
-    ; Read received character
-    mov dx, 03F8H
-    in al, dx
-    mov value, al
+                          mov  ah, 00h                  ; Read character
+                          int  16h
+                          mov  localChar, al            ; Store character
+                          cmp  al, 1Bh                  ; Check if ESC (ASCII 27)
+                          je   Call_Global_Exit         ; If ESC is pressed, jump to call Global_Exit_Sequence
 
-    ; Check if received character is ESC
-    cmp value, 1Bh
-    je exit
+    ; Display character on screen (local input section)
+                          mov  dh, localRow             ; Row for local input
+                          mov  dl, localCol             ; Column for local input
+                          call Set_Cursor
+                          mov  al, localChar            ; Character to display
+                          call Display_Char_coloured
 
-    ; Print received character
-    cmp value, 0Dh      ; Check if received Enter
-    je handleEnterUART
+    ; Send character via UART
+                          call Wait_UART_Tx             ; Ensure UART is ready
 
-    mov ah, 2
-    mov dl, value
-    int 21h
+                          mov  dx, 3F8h                 ; Transmit Data Register
+                          mov  al, localChar            ; Load character
+                          out  dx, al                   ; Send character
 
-    jmp checkKey
+    ; Update cursor position for local input
+                          inc  localCol
+                          cmp  localCol, 80             ; If column reaches the end of the row
+                          jl   Check_Local_Scroll       ; If less than 80, continue
+                          mov  localCol, 0              ; Reset column to 0 for next line
+                          inc  localRow                 ; Move to next row
 
-handleEnterUART:
-    ; Print newline for received Enter
-    mov ah, 2
-    mov dl, 0Dh         ; Carriage return
-    int 21h
-    mov dl, 0Ah         ; Line feed
-    int 21h
-    jmp checkKey
+    ; Scroll local section if needed
+    Check_Local_Scroll:   cmp  localRow, 12
+                          jl   No_Key
+                          call Scroll_Screen_Local
+                          mov  localRow, 11             ; Reset to the last row of local section
 
-sendEsc:
-    ; Send ESC character to UART before exiting
-    mov dx, 3FDH        ; Line Status Register
-WaitForEmptyEsc:
-    in al, dx
-    and al, 00100000b
-    jz WaitForEmptyEsc
+    No_Key:               ret
 
-    mov dx, 3F8H        ; Transmit Data Register
-    mov al, 1Bh
-    out dx, al
+    Call_Global_Exit:     
+                          call Global_Exit_Sequence     ; Call the unified Global_Exit_Sequence procedure
+                          ret
+Handle_Keyboard_Input ENDP
 
-    jmp exit
 
-handleError:
-    ; Display error message
-    lea dx, errorMsg
-    mov ah, 09h
-    int 21h
+Handle_UART_Input PROC
+    ; Check if data is ready in UART
+                          mov  dx, 3FDh                 ; Line Status Register
+                          in   al, dx
+                          and  al, 1                    ; Check if Data Ready bit is set
+                          jz   No_Serial                ; Skip if no data is available
 
-    ; Clear the overrun error by reading from the UART
-    mov dx, 03F8H
-    in al, dx
-    ret
+    ; Read received data
+                          mov  dx, 3F8h                 ; Receive Data Register
+                          in   al, dx
+                          mov  receivedChar, al         ; Store received character
 
-checkKey endp
+    ; Check for exit signal
+                          cmp  receivedChar, 1Bh        ; Check for ESC character
+                          je   Global_Exit_Sequence
 
-Main proc
-    mov ax, @data
-    mov ds, ax
+    ; Display received character on screen (remote input section)
+                          mov  dh, remoteRow            ; Row for remote input
+                          mov  dl, remoteCol            ; Column for remote input
+                          call Set_Cursor
+                          mov  al, receivedChar         ; Character to display
+                          call Display_Char
 
-    ; Initialize COM port
-    mov dx, 3FBH        ; Line Control Register
-    mov al, 10000000b   ; Enable Divisor Latch Access
-    out dx, al
+    ; Update cursor position for remote input
+                          inc  remoteCol
+                          cmp  remoteCol, 80            ; If column reaches the end of the row
+                          jl   Check_Remote_Scroll      ; If less than 80, continue
+                          mov  remoteCol, 0             ; Reset to 0 for next line
+                          inc  remoteRow                ; Move to next row
 
-    ; Set Baud Rate Divisor (LSB and MSB)
-    mov dx, 3F8H
-    mov al, 0Ch         ; LSB (Baud Rate Divisor)
-    out dx, al
+    ; Scroll remote section if needed
+    Check_Remote_Scroll:  cmp  remoteRow, 24            ; Check if beyond remote section
+                          jl   No_Serial
+                          call Scroll_Screen_Remote
+                          mov  remoteRow, 23            ; Reset to the last row of remote section
+    No_Serial:            ret
+Handle_UART_Input ENDP
 
-    mov dx, 3F9H
-    mov al, 00h         ; MSB (Baud Rate Divisor)
-    out dx, al
+Scroll_Screen_Local PROC
+                          push ax
+                          push bx
+                          push cx
+                          push dx
 
-    ; Set port configuration
-    mov dx, 3FBH
-    mov al, 00011011b   ; 8 bits, no parity, 1 stop bit
-    out dx, al
+                          mov  ah, 06h                  ; BIOS function to scroll up screen
+                          mov  al, 1                    ; Scroll up by 1 line
+                          mov  bh, 07h                  ; Attribute (white on black)
+                          mov  cx, 0000h                ; Upper left corner (row 0, column 0)
+                          mov  dx, 0C4Fh                ; Lower right corner (row 12, column 79)
+                          int  10h                      ; Call BIOS interrupt to scroll the local input area
 
-sendloop:
-    call checkKey
+                          pop  dx
+                          pop  cx
+                          pop  bx
+                          pop  ax
+                          ret
+Scroll_Screen_Local ENDP
 
-exit:
-    mov ah, 4Ch
-    int 21h
+Scroll_Screen_Remote PROC
+                          push ax
+                          push bx
+                          push cx
+                          push dx
 
-Main endp
-end
+                          mov  ah, 06h                  ; BIOS function to scroll up screen
+                          mov  al, 1                    ; Scroll up by 1 line
+                          mov  bh, 07h                  ; Attribute (white on black)
+                          mov  cx, 0D00h                ; Upper left corner of the bottom region (row 13, column 0)
+                          mov  dx, 174Fh                ; Lower right corner of the bottom region (row 25, column 79)
+                          int  10h                      ; Call BIOS interrupt to scroll the bottom half of the screen
+
+    
+                          pop  dx
+                          pop  cx
+                          pop  bx
+                          pop  ax
+                          ret
+Scroll_Screen_Remote ENDP
+
+Clear_Screen PROC
+                          mov  ah, 06h                  ; BIOS function to scroll up and clear screen
+                          mov  al, 0                    ; Clear the screen
+                          mov  bh, 07h                  ; Attribute (default)
+                          mov  cx, 0                    ; Upper left corner (row 0, column 0)
+                          mov  dx, 184Fh                ; Lower right corner (row 25, column 79)
+                          int  10h                      ; Call BIOS interrupt to clear the screen
+                          ret
+Clear_Screen ENDP
+
+Global_Exit_Sequence PROC
+                          call Send_Exit_Signal         ; Send exit signal to receiver
+                          mov  exitFlag, 1              ; Set exit flag
+                          ret
+Global_Exit_Sequence ENDP
+
+Exit_Program PROC
+                          mov  ah, 09h
+                          mov  dx, offset goodbyeMsg
+                          int  21h
+
+                          mov  ah, 4Ch                  ; Terminate program
+                          int  21h
+Exit_Program ENDP
+
+chat PROC FAR
+                          mov  ax, @data
+                          mov  ds, ax
+
+                          call Clear_Screen
+                          call Initialize_UART
+
+    Main_Loop:            
+                          call Handle_Keyboard_Input
+                          call Handle_UART_Input
+
+                          cmp  exitFlag, 1              ; Check if exit flag is set
+                          je   Exit_Program
+
+                          jmp  Main_Loop                ; Near jump to loop
+chat ENDP
+
+END chat
