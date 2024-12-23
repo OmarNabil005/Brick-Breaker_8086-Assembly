@@ -24,8 +24,6 @@ public bricks_initial_y
 .code
 drawBricks PROC FAR
 	;PUSH DS
-    mov ax, @data
-    mov ds, ax
 
     MOV CX, num_columns					;counter for number of bricks in each row
 	MOV DI, 0							;index for column

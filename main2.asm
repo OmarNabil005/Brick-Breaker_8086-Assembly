@@ -16,7 +16,7 @@ endm
 	extrn moveLeft:FAR
 	extrn moveRight:FAR
 	extrn TIME_STORE:byte
-	extrn resetActiveBricks:FAR
+	extrn resetBallAndBricks:FAR
 	extrn resetBar:FAR
 	public SCORE
 	public LIVES
@@ -102,7 +102,7 @@ MAIN PROC
 
 
 	           mov         ah,00h       	;set video mode
-	           mov         al,13h       	;choose vedio mode
+	           mov         al,13h       	;choose video mode
 	           int         10h
 
 	           Call        menu
@@ -119,10 +119,10 @@ MAIN ENDP
 
 resetAll PROC NEAR
 	           MOV         LIVES, 3
-	           MOV         LEVEL, 1
 	           MOV         SCORE, 0
+			   MOV         LEVEL, 1
 	           MOV         BRICKS_LEFT, 45
-			   call 	   resetActiveBricks
+			   call 	   resetBallAndBricks
 			   call 	   resetBar
 	           RET
 resetAll ENDP

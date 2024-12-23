@@ -1,4 +1,6 @@
 extrn menu:far
+extrn LEVEL:word
+extrn resetActiveBricks:far
 public loss
 
 .MODEL SMALL
@@ -76,6 +78,7 @@ loss PROC FAR
 
     ; Clear the screen
                    call   Clear_Screen
+                   call   resetActiveBricks
 
     ; Display 'Game Over' in the middle of the screen
                    mov    dh, 12              ; Middle row (approx.)

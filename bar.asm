@@ -35,10 +35,6 @@ public barBottom
 .CODE
 Bar PROC FAR
     
-    mov ah, 0Bh             ; set background color to black
-    mov bx, 0h
-    int 10h
-
     drawHorizontal:         ; outer loop (draws horizontal lines)
         mov cx, barTop
         mov barY, cx        ; start at Y = 450
@@ -158,8 +154,8 @@ endp moveRight
 resetBar PROC FAR
     mov barLeft, 130d
     mov barRight, 189d
-    mov barTop, 170d
-    mov barBottom, 180d
+    mov barX, 129d
+    mov barY, 170d
     ret
 resetBar ENDP
 
