@@ -12,21 +12,19 @@ public movePlayerOneLeft
 public movePlayerOneRight
 public movePlayerTwoLeft
 public movePlayerTwoRight
+public playerOneBarLeft
+public playerOneBarRight
+public playerTwoBarLeft
+public playerTwoBarRight
+public barTop
 public speed
 public resetBar
 
 .MODEL SMALL
 .STACK 100h
 
-public playerOneBarLeft
-public playerOneBarRight
-public playerTwoBarLeft
-public playerTwoBarRight
-public barTop
-
 .DATA
     barTop dw 170d
-    barBottom equ 180d
     playerOneBarLeft dw 60d
     playerOneBarRight dw 109d
     playerTwoBarLeft dw 210d
@@ -38,6 +36,7 @@ public barTop
     playerTwoBarLeftInitial equ 210d
     playerTwoBarRightInitial equ 259d
     barTopInitial equ 170d
+    barBottom equ 180d
 
 
     ; threshold values for the bars
@@ -51,7 +50,7 @@ public barTop
     barY dw 170d
 
     speed db 04h
-    speedCounter db 02h
+    speedCounter db 04h
 
     ; colors
     grey equ 07h
