@@ -55,6 +55,9 @@ endm
 
 	TIME_STORE      db  0                       	;variable used for checking time changed
 
+
+	BALL_SPEED_ORIGINAL_X dw  02h               	;original speed of the ball in x axis
+	BALL_SPEED_ORIGINAL_Y dw  05h               	;original speed of the ball in y axis
 	BALL_X_SPEED    dw  02h                     	;speed of the ball in x axis
 	BALL_Y_SPEED    dw  05h                     	;speed of the ball in y axis
 
@@ -421,6 +424,7 @@ check_collision PROC near
 	                    cmp  BRICKS_LEFT, 0          	; Check if all bricks are cleared
 	                    jne  draw_next_brick
 	                    call level_up                	;Level up logic if all bricks are cleared
+						jmp  no_index
 	draw_next_brick:    
 	                    mov  cx,bricks_initial_x[si]
 	                    mov  dx,bricks_initial_y[bx]
@@ -431,32 +435,29 @@ check_collision PROC near
 	                    pop  si
 	                    pop  bx
 
+	rett:
 	                    pop  dx
 	                    pop  cx
 	                    pop  ax
 	                    ret
 check_collision ENDP
+
 level_up PROC NEAR
-	                    push AX
-	                    push bx
-	                    inc  LEVEL                   	; Increase level
-	                    mov  BRICKS_LEFT, 45         	; Reset brick count
+    inc  LEVEL                   ; Increase level
+    mov  BRICKS_LEFT, 45         ; Reset brick count
+    
+    ; Ensure clean state for next level
+    call resetBallSpeed
+    call resetActiveBricks
 
-	
-	                    mov  ax, BALL_X_SPEED        	;Increase ball speed for higher difficulty
-	                    mov  bx,2
-	                    mul  bx                      	; Increment X speed
-	                    mov  BALL_X_SPEED, ax
-
-	                    mov  ax, BALL_Y_SPEED
-	                    mul  bx                      	; Increment Y speed
-	                    mov  BALL_Y_SPEED, ax
-	                    pop  bx
-	                    pop  ax
-						call resetActiveBricks
-						call drawBricks
-	                    
-	                    ret
+    
+    ; Increase difficulty
+    mov  ax, LEVEL              ; Load current level
+    add  BALL_X_SPEED, ax       ; Proportional speed increase
+    add  BALL_Y_SPEED, ax
+    
+    call drawBricks
+    ret
 level_up ENDP
 
 resetBallAndBricks PROC FAR
@@ -466,12 +467,14 @@ resetBallAndBricks PROC FAR
 resetBallAndBricks ENDP
 
 resetActiveBricks PROC NEAR
-	                    mov  cx, 45
+						push si
+						mov  cx, 45
 	                    mov  si, 0
 	resetActiveBricks_loop:
 	                    mov  active_bricks[si], 1
 	                    add  si, 2
 	                    loop resetActiveBricks_loop
+						pop si
 	                    ret
 resetActiveBricks ENDP
 
