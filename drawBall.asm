@@ -347,7 +347,6 @@ check_collision PROC near
 	;BALL_Y + BALL_SIZE + offset > BRICK_Y (top of brick) with (bottom left of ball)
 	                    mov  ax, BALL_Y
 	                    add  ax, BALL_SIZE
-	                    ADD  AX, WINDOW_BOUNCE
 	                    cmp  ax, bricks_initial_y[bx]	; Compare ball's Y with brick's initial Y
 	                    jl   finish_row              	; If less, skip this row
 		
@@ -355,7 +354,6 @@ check_collision PROC near
 	                    MOV  AX, BALL_Y
 	                    mov  dx, bricks_initial_y[bx]
 	                    add  dx, brick_height
-	                    ADD  DX, WINDOW_BOUNCE
 	                    cmp  ax, dx                  	; Check if within row vertically
 	                    jl   check_col               	; If yes, check columns to know which x value
 
@@ -374,7 +372,6 @@ check_collision PROC near
 	; BALL_X + BALL_SIZE + offset > brick_x
 	                    mov  ax, BALL_X
 	                    ADD  AX, BALL_SIZE
-	                    ADD  AX, WINDOW_BOUNCE
 	                    cmp  ax, bricks_initial_x[SI]	; Compare ball's X + size with brick's initial X (collision of right side of ball)
 	                    jl   finish_col              	; If less, skip this column
 		
@@ -382,7 +379,6 @@ check_collision PROC near
 	;BALL_X < brick_x + brick_width + offset
 	                    mov  dx, bricks_initial_x[si]
 	                    add  dx, brick_width
-	                    ADD  DX, WINDOW_BOUNCE
 	                    MOV  AX, BALL_X
 	                    cmp  ax, dx                  	; Check if within column horizontally
 	                    jl   finish                  	; If yes, verify corners
