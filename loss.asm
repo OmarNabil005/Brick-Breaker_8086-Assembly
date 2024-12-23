@@ -72,9 +72,6 @@ loss PROC FAR
                    push   ds
                    push   dx
 
-    ; Set up data segment
-                   mov    ax, @data
-                   mov    ds, ax
 
     ; Clear the screen
                    call   Clear_Screen
