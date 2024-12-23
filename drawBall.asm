@@ -17,8 +17,10 @@ endm
     EXTRN LIVES:word
     EXTRN LEVEL:word
     EXTRN BRICKS_LEFT:word
-	EXTRN barLeft:word
-	EXTRN barRight:word
+	EXTRN playerOneBarLeft:word
+	EXTRN playerTwoBarLeft:word
+	EXTRN playerOneBarRight:word
+	EXTRN playerTwoBarRight:word
 	EXTRN barTop:word
 	EXTRN barBottom:word
 
@@ -46,15 +48,18 @@ endm
 	WINDOW_BOUNCE   dw  3h                      	;used to check collision early
 
 	BALL_X          dw  0a0h                    	;x position of the ball
-	BALL_ORIGINAL_X dw  0a0h                    	;x original position
+	BALL_ORIGINAL_X equ  0a0h                    	;x original position
 
 	BALL_Y          dw  64h                     	;y position of the ball
-	BALL_ORIGINAL_Y dw  64h                     	;y original position
+	BALL_ORIGINAL_Y equ  64h                     	;y original position
 
 	BALL_SIZE       dw  04h                     	;size of the ball
 
 	TIME_STORE      db  0                       	;variable used for checking time changed
 
+
+	BALL_SPEED_ORIGINAL_X dw  02h               	;original speed of the ball in x axis
+	BALL_SPEED_ORIGINAL_Y dw  05h               	;original speed of the ball in y axis
 	BALL_X_SPEED    dw  02h                     	;speed of the ball in x axis
 	BALL_Y_SPEED    dw  05h                     	;speed of the ball in y axis
 
@@ -78,15 +83,39 @@ Move_Ball PROC FAR
 	                    add  ax,BALL_Y
 	                    add  ax,BALL_SIZE            	;check of y
 	                    cmp  ax,barTop
+	                    jl   checkSecondBar
+
+	                    mov  ax, BALL_X
+	                    add  ax,BALL_SIZE            	;first x condition
+	                    cmp  ax,playerOneBarLeft
+	                    jl   checkSecondBar
+
+	                    mov  ax,BALL_X
+	                    cmp  ax,playerOneBarRight
+	                    jg   checkSecondBar
+						
+
+	; =========to avoid gettings tuck========
+	                    mov  ax, barTop
+	                    sub  ax, BALL_SIZE
+	                    sub  ax, WINDOW_BOUNCE
+	                    mov  ball_y, ax
+	                    jmp  neg_speed_y
+	;========================================
+	checkSecondBar:
+						mov  ax,WINDOW_BOUNCE
+	                    add  ax,BALL_Y
+	                    add  ax,BALL_SIZE            	;check of y
+	                    cmp  ax,barTop
 	                    jl   check_left_wall
 
 	                    mov  ax, BALL_X
 	                    add  ax,BALL_SIZE            	;first x condition
-	                    cmp  ax,barLeft
+	                    cmp  ax,playerTwoBarLeft
 	                    jl   check_left_wall
 
 	                    mov  ax,BALL_X
-	                    cmp  ax,barRight
+	                    cmp  ax,playerTwoBarRight
 	                    jg   check_left_wall
 						
 
@@ -97,6 +126,7 @@ Move_Ball PROC FAR
 	                    mov  ball_y, ax
 	                    jmp  neg_speed_y
 	;========================================
+
 
 
 	check_left_wall:    
@@ -414,9 +444,10 @@ check_collision PROC near
 	                    dec  BRICKS_LEFT             	; Reduce brick count
 	                    inc  SCORE                   	; Increase score by 1
 	
-	                    cmp  BRICKS_LEFT, 0          	; Check if all bricks are cleared
+	                    cmp  BRICKS_LEFT, 30          	; Check if all bricks are cleared
 	                    jne  draw_next_brick
 	                    call level_up                	;Level up logic if all bricks are cleared
+						jmp  no_index
 	draw_next_brick:    
 	                    mov  cx,bricks_initial_x[si]
 	                    mov  dx,bricks_initial_y[bx]
@@ -427,32 +458,28 @@ check_collision PROC near
 	                    pop  si
 	                    pop  bx
 
+	rett:
 	                    pop  dx
 	                    pop  cx
 	                    pop  ax
 	                    ret
 check_collision ENDP
+
 level_up PROC NEAR
-	                    push AX
-	                    push bx
-	                    inc  LEVEL                   	; Increase level
-	                    mov  BRICKS_LEFT, 45         	; Reset brick count
+    inc  LEVEL                   ; Increase level
+    mov  BRICKS_LEFT, 45         ; Reset brick count
+    
+    ; Ensure clean state for next level
+    call resetBallSpeed
+    call resetActiveBricks
 
-	
-	                    mov  ax, BALL_X_SPEED        	;Increase ball speed for higher difficulty
-	                    mov  bx,2
-	                    mul  bx                      	; Increment X speed
-	                    mov  BALL_X_SPEED, ax
-
-	                    mov  ax, BALL_Y_SPEED
-	                    mul  bx                      	; Increment Y speed
-	                    mov  BALL_Y_SPEED, ax
-	                    pop  bx
-	                    pop  ax
-						call resetActiveBricks
-						call drawBricks
-	                    
-	                    ret
+    ; Increase difficulty
+    mov  ax, LEVEL              ; Load current level
+    add  BALL_X_SPEED, ax       ; Proportional speed increase
+    add  BALL_Y_SPEED, ax
+    
+    call drawBricks
+    ret
 level_up ENDP
 
 resetBallAndBricks PROC FAR
@@ -462,12 +489,14 @@ resetBallAndBricks PROC FAR
 resetBallAndBricks ENDP
 
 resetActiveBricks PROC NEAR
-	                    mov  cx, 45
+						push si
+						mov  cx, 45
 	                    mov  si, 0
 	resetActiveBricks_loop:
 	                    mov  active_bricks[si], 1
 	                    add  si, 2
 	                    loop resetActiveBricks_loop
+						pop si
 	                    ret
 resetActiveBricks ENDP
 
