@@ -11,6 +11,7 @@ endm
 	EXTRN bricks_initial_y:word
 	EXTRN Brick:FAR
 	extrn drawBricks:FAR
+	extrn loss:FAR
 	EXTRN SCORE:word
     EXTRN LIVES:word
     EXTRN LEVEL:word
@@ -28,6 +29,7 @@ endm
 	public BALL_Y
 	public BALL_X_SPEED
 	public BALL_Y_SPEED
+	public resetActiveBricks
 
 	.MODEL SMALL
 	.STACK 100h
@@ -55,11 +57,11 @@ endm
 	BALL_X_SPEED    dw  02h                     	;speed of the ball in x axis
 	BALL_Y_SPEED    dw  05h                     	;speed of the ball in y axis
 
-	active_bricks   dw  1, 1, 1, 1, 1, 1, 1, 1,1
-	                dw  1, 1, 1, 1, 1, 1, 1, 1,1
-	                dw  1, 1, 1, 1, 1, 1, 1, 1,1
-	                dw  1, 1, 1, 1, 1, 1, 1, 1,1
-	                dw  1, 1, 1, 1, 1, 1, 1, 1,1
+	active_bricks   dw  1, 1, 1, 1, 1, 1, 1, 1, 1
+	                dw  1, 1, 1, 1, 1, 1, 1, 1, 1
+	                dw  1, 1, 1, 1, 1, 1, 1, 1, 1
+	                dw  1, 1, 1, 1, 1, 1, 1, 1, 1
+	                dw  1, 1, 1, 1, 1, 1, 1, 1, 1
 
 .CODE
 
@@ -143,6 +145,9 @@ Move_Ball PROC FAR
 	                    sub  ax, WINDOW_BOUNCE
 	                    sub  ax,GAME_WINDOW
 	                    dec  LIVES
+						jnz comp
+						call loss
+						comp:
 	                    mov  ball_y, ax
 	;===================================
 	                    jmp  reset_position
@@ -451,5 +456,15 @@ level_up PROC NEAR
 	                    
 	                    ret
 level_up ENDP
+
+resetActiveBricks PROC FAR
+	                    mov  cx, 45
+	                    mov  si, 0
+	resetActiveBricks_loop:
+	                    mov  active_bricks[si], 1
+	                    add  si, 2
+	                    loop resetActiveBricks_loop
+	                    ret
+resetActiveBricks ENDP
 
 END Move_Ball

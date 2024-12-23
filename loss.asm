@@ -1,4 +1,5 @@
 extrn menu:far
+public loss
 
 .MODEL SMALL
 .STACK 100h
@@ -99,7 +100,12 @@ loss PROC FAR
 
     ; Wait for valid user input
     WaitForInput:  
-                   mov    ah, 01h             ; BIOS function to read key
+
+                   mov  ah, 01h                  ; Check if key is in keyboard buffer
+                   int  16h
+                   jz   WaitForInput
+
+                   mov    ah, 0h             ; BIOS function to read key
                    int    16h                 ; Get key press
 
                    cmp    al, '1'             ; Check if '1' was pressed
