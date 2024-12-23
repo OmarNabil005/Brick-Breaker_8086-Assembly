@@ -93,10 +93,7 @@ Display_Stats PROC FAR
                        push di
                        push es
 
-    ; Save current data segment
-                       mov  ax, @data
-                       mov  ds, ax
-                       mov  es, ax
+
 
     ; Prepare buffers for converted numbers
                        lea  di, ScoreBuffer

@@ -35,8 +35,7 @@ public menu
     
 .code
 menu proc far
-                   mov            ax, @data
-                   mov            ds, ax
+                   
                    clear_screen
 
     ; Center and display "Start"
