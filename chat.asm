@@ -1,271 +1,254 @@
+initPort MACRO
+    ;Set Divisor Latch Access Bit
+             MOV DX, 3FBh         ; Line Control Register
+             MOV AL, 10000000b    ;Set Divisor Latch Access Bit
+             OUT DX, AL           ;Out it
+	
+    ;Set LSB byte of the Baud Rate Divisor Latch register.
+             MOV DX, 3F8h
+             MOV AL, 0Ch
+             OUT DX, AL
+
+    ;Set MSB byte of the Baud Rate Divisor Latch register.
+             MOV DX, 3F9h
+             MOV AL, 00h
+             OUT DX, AL
+
+    ;Set port configuration
+             MOV DX, 3FBh
+             MOV AL, 00011011b
+             OUT DX, AL
+ENDM
+
+clearScreen MACRO
+                MOV AH, 0
+                MOV AL, 3
+                INT 10h
+                MOV AH, 6      ;function 6
+                MOV al, 13     ;scroll lines
+                MOV bh, 07h    ;normal video attribute
+                MOV ch, 0      ;upper left Y
+                MOV cl, 0      ;upper left X
+                MOV dh, 12     ;lower right Y
+                MOV dl, 79     ;lower right X
+                int 10h
+
+	
+                MOV AH, 6      ;function 6
+                MOV al, 12     ;scroll lines
+                MOV bh, 70h    ;normal video attribute
+                MOV ch, 13     ;upper left Y
+                MOV cl, 0      ;upper left X
+                MOV dh, 24     ;lower right Y
+                MOV dl, 79     ;lower right X
+                int 10h
+ENDM
+
+setCursor MACRO x, y
+              MOV AH, 2
+              MOV BH, 0
+              MOV DL, x
+              MOV DH, y
+              int 10h
+ENDM
+
+clearUpperScreen MACRO
+                     mov AX, 0601h
+                     mov BH, 07h
+                     mov CH, 0
+                     mov CL, 0
+                     mov DH, 12
+                     mov DL, 79
+                     int 10h
+ENDM
+
+clearLowerScreen MACRO
+                     mov AX, 0601h    ;int options (al=lines to scroll)
+                     mov BH, 70h
+                     mov CH, 13       ;top y
+                     mov CL, 0        ;left x
+                     mov DH, 24       ;bottom y
+                     mov DL, 79       ;right x
+                     int 10h
+ENDM
+
+saveCursorSender MACRO
+                     mov ah,3h
+                     mov bh,0h
+                     int 10h
+                     mov x_sender, dl
+                     mov y_sender, dh
+ENDM
+
+saveCursorReciever MACRO
+                       mov ah,3h
+                       mov bh,0h
+                       int 10h
+                       mov x_reciever,	dl
+                       mov y_reciever,	dh
+ENDM
+
+
 public chat
-
 .MODEL small
-.STACK 100h
+.STACK 100
+.data
+    value      db ?, "$"
+    messsage   DB 'reciever on , press esc to end session', 0AH, 0DH, "$"
+    messsage2  DB 'Enter your string', 0AH, 0DH, "$"
+    messsage3  DB 'good by then', 0AH, 0DH, "$"
 
-.DATA
-    goodbyeMsg   DB 'Goodbye!', 0AH, 0DH, "$"
+    INPUT      DB ?
+    x_sender   DB 0h
+    x_reciever DB 0h
+    y_sender   DB 0h
+    y_reciever DB 0Dh
 
-    ; Data Buffers
-    localChar    DB ?                            ; Stores the local character typed
-    receivedChar DB ?                            ; Stores the received character
-    localRow     DB 0                            ; Cursor row for local input
-    localCol     DB 0                            ; Cursor column for local input
-    remoteRow    DB 13                           ; Cursor row for remote input (starts at row 13)
-    remoteCol    DB 0                            ; Cursor column for remote input
-    exitFlag     DB 0                            ; Flag to indicate program exit
-
-.CODE
-Initialize_UART PROC
-                          mov  dx, 3FBh                 ; Line Control Register
-                          mov  al, 10000000b            ; Set Divisor Latch Access Bit
-                          out  dx, al
-
-                          mov  dx, 3F8h                 ; Baud Rate Divisor LSB
-                          mov  al, 0Ch                  ; 9600 baud
-                          out  dx, al
-
-                          mov  dx, 3F9h                 ; Baud Rate Divisor MSB
-                          mov  al, 00h
-                          out  dx, al
-
-                          mov  dx, 3FBh                 ; Line Control Register
-                          mov  al, 00011011b            ; 8 data bits, no parity, 1 stop bit
-                          out  dx, al
-                          ret
-Initialize_UART ENDP
-
-Set_Cursor PROC
-                          mov  ah, 02h                  ; BIOS function to set cursor position
-                          mov  bh, 0                    ; Video page number
-                          int  10h
-                          ret
-Set_Cursor ENDP
-
-Display_Char PROC
-                          push ax
-                          push bx
-                          push cx
-                          push dx
-
-                          mov  ah, 09h                  ; BIOS function to write character/attribute
-                          mov  al, receivedChar         ; Character to display
-                          mov  bh, 0                    ; Video page number
-                          mov  bl, 0Eh                  ; Attribute: red text on black background
-                          mov  cx, 1                    ; Write the character once
-                          int  10h                      ; Call BIOS interrupt
-
-                          pop  dx
-                          pop  cx
-                          pop  bx
-                          pop  ax
-                          ret
-Display_Char ENDP
-
-Display_Char_coloured PROC
-                          push ax
-                          push bx
-                          push cx
-                          push dx
-
-                          mov  ah, 09h                  ; BIOS function to write character/attribute
-                          mov  al, localChar            ; Character to display
-                          mov  bh, 0                    ; Video page number
-                          mov  bl, 0Ah                  ; Attribute: red text on black background
-                          mov  cx, 1                    ; Write the character once
-                          int  10h                      ; Call BIOS interrupt
-
-                          pop  dx
-                          pop  cx
-                          pop  bx
-                          pop  ax
-                          ret
-Display_Char_coloured ENDP
+.code
 
 
-Wait_UART_Tx PROC
-                          mov  dx, 3FDh                 ; Line Status Register
-    Wait_UART_Tx_Loop:    in   al, dx                   ; Check Transmitter Holding Register
-                          and  al, 00100000b            ; Check if empty
-                          jz   Wait_UART_Tx_Loop        ; Wait until ready
-                          ret
-Wait_UART_Tx ENDP
+chat proc FAR
+                      MOV                ax, @data
+                      MOV                ds, ax
+	
+                      initPort                                     ;initialize port
+	
+                      clearScreen                                  ;clear all screen
 
-Send_Exit_Signal PROC
-    ; Send ESC character via UART to signal exit to receiver
-                          call Wait_UART_Tx             ; Ensure UART is ready
-
-                          mov  dx, 3F8h                 ; Transmit Data Register
-                          mov  al, 1Bh                  ; ESC character
-                          out  dx, al                   ; Send character
-                          ret
-Send_Exit_Signal ENDP
-
-Handle_Keyboard_Input PROC
-                          mov  ah, 01h                  ; Check if key is in keyboard buffer
-                          int  16h
-                          jz   No_Key                   ; No key pressed, skip to UART check
-
-                          mov  ah, 00h                  ; Read character
-                          int  16h
-                          mov  localChar, al            ; Store character
-                          cmp  al, 1Bh                  ; Check if ESC (ASCII 27)
-                          je   Call_Global_Exit         ; If ESC is pressed, jump to call Global_Exit_Sequence
-
-    ; Display character on screen (local input section)
-                          mov  dh, localRow             ; Row for local input
-                          mov  dl, localCol             ; Column for local input
-                          call Set_Cursor
-                          mov  al, localChar            ; Character to display
-                          call Display_Char_coloured
-
-    ; Send character via UART
-                          call Wait_UART_Tx             ; Ensure UART is ready
-
-                          mov  dx, 3F8h                 ; Transmit Data Register
-                          mov  al, localChar            ; Load character
-                          out  dx, al                   ; Send character
-
-    ; Update cursor position for local input
-                          inc  localCol
-                          cmp  localCol, 80             ; If column reaches the end of the row
-                          jl   Check_Local_Scroll       ; If less than 80, continue
-                          mov  localCol, 0              ; Reset column to 0 for next line
-                          inc  localRow                 ; Move to next row
-
-    ; Scroll local section if needed
-    Check_Local_Scroll:   cmp  localRow, 12
-                          jl   No_Key
-                          call Scroll_Screen_Local
-                          mov  localRow, 11             ; Reset to the last row of local section
-
-    No_Key:               ret
-
-    Call_Global_Exit:     
-                          call Global_Exit_Sequence     ; Call the unified Global_Exit_Sequence procedure
-                          ret
-Handle_Keyboard_Input ENDP
-
-
-Handle_UART_Input PROC
-    ; Check if data is ready in UART
-                          mov  dx, 3FDh                 ; Line Status Register
-                          in   al, dx
-                          and  al, 1                    ; Check if Data Ready bit is set
-                          jz   No_Serial                ; Skip if no data is available
-
-    ; Read received data
-                          mov  dx, 3F8h                 ; Receive Data Register
-                          in   al, dx
-                          mov  receivedChar, al         ; Store received character
-
-    ; Check for exit signal
-                          cmp  receivedChar, 1Bh        ; Check for ESC character
-                          je   Global_Exit_Sequence
-
-    ; Display received character on screen (remote input section)
-                          mov  dh, remoteRow            ; Row for remote input
-                          mov  dl, remoteCol            ; Column for remote input
-                          call Set_Cursor
-                          mov  al, receivedChar         ; Character to display
-                          call Display_Char
-
-    ; Update cursor position for remote input
-                          inc  remoteCol
-                          cmp  remoteCol, 80            ; If column reaches the end of the row
-                          jl   Check_Remote_Scroll      ; If less than 80, continue
-                          mov  remoteCol, 0             ; Reset to 0 for next line
-                          inc  remoteRow                ; Move to next row
-
-    ; Scroll remote section if needed
-    Check_Remote_Scroll:  cmp  remoteRow, 24            ; Check if beyond remote section
-                          jl   No_Serial
-                          call Scroll_Screen_Remote
-                          mov  remoteRow, 23            ; Reset to the last row of remote section
-    No_Serial:            ret
-Handle_UART_Input ENDP
-
-Scroll_Screen_Local PROC
-                          push ax
-                          push bx
-                          push cx
-                          push dx
-
-                          mov  ah, 06h                  ; BIOS function to scroll up screen
-                          mov  al, 1                    ; Scroll up by 1 line
-                          mov  bh, 07h                  ; Attribute (white on black)
-                          mov  cx, 0000h                ; Upper left corner (row 0, column 0)
-                          mov  dx, 0C4Fh                ; Lower right corner (row 12, column 79)
-                          int  10h                      ; Call BIOS interrupt to scroll the local input area
-
-                          pop  dx
-                          pop  cx
-                          pop  bx
-                          pop  ax
-                          ret
-Scroll_Screen_Local ENDP
-
-Scroll_Screen_Remote PROC
-                          push ax
-                          push bx
-                          push cx
-                          push dx
-
-                          mov  ah, 06h                  ; BIOS function to scroll up screen
-                          mov  al, 1                    ; Scroll up by 1 line
-                          mov  bh, 07h                  ; Attribute (white on black)
-                          mov  cx, 0D00h                ; Upper left corner of the bottom region (row 13, column 0)
-                          mov  dx, 174Fh                ; Lower right corner of the bottom region (row 25, column 79)
-                          int  10h                      ; Call BIOS interrupt to scroll the bottom half of the screen
-
+	
+    main_loop:        
+                      MOV                AH,1                      ;check if key is pressed
+                      INT                16h
+                      JNZ                send
+                      JMP                recieve                   ;if no key is pressed, go recieve mode
+	
+    send:             
+                      MOV                AH, 0                     ;clear keyboard buffer
+                      int                16h
+		
+                      MOV                INPUT, AL                 ;Store it in AL (ASCII?)
+                      CMP                AL, 0Dh                   ;check if enter
+                      JNE                cont
+	
+	
+    newline:          
+                      CMP                y_sender, 12              ;check if y position is at end, if yes, clear sender screen
+                      JNE                continue_new_line         ;if no, continue
+		
+    ;if y is at the end, clear screen
+                      clearUpperScreen
+                      MOV                x_sender, 0
+    ;MOV y_sender, 0
+                      setCursor          x_sender, y_sender
+                      JMP                print                     ;now print
+		
+    continue_new_line:
+                      INC                y_sender
+                      MOV                x_sender, 0
+    cont:             
+                      setCursor          x_sender, y_sender
+                      CMP                x_sender, 79              ;check if x went to the boundaries
+                      JE                 dontprint
+                      JMP                print                     ;if not, just print
+    dontprint:        
+	
+    ; if x is at the boundaries
+                      CMP                y_sender, 12              ;if y as at the boundaries (and x is also at the boundaries)
+                      JNZ                print                     ;if not, just print normally
+                      clearUpperScreen                             ;if both at the boundaries, clear the sender screen and reset cursor
+                      MOV                x_sender, 0               ;set cursor x
+    ;MOV y_sender, 0		;set cursor y (if clear)
+                      setCursor          x_sender, y_sender
+                      JMP                print                     ;then finally print
+		
+    print:            
+                      mov                ah,2                      ;printing the char
+                      mov                dl, INPUT
+                      int                21h
+		  
+                      mov                dx,3FDH                   ;Line Status Register
+                      in                 al , dx                   ;Read Line Status
+                      AND                al , 00100000b
+                      jz                 recieve                   ;Not empty
+                      mov                dx, 3F8H                  ;Transmit data register
+                      mov                al, INPUT                 ;put the data into al
+                      out                dx, al                    ;sending the data
+                      CMP                al, 27                    ;if the key was esc terminate the programe and this check must be after the send is done
+                      JNE                dontexit2
+                      JMP                exit
+    dontexit2:        
+		
+                      saveCursorSender                             ;store current cursor in the variables
+                      jmp                main_loop                 ;loop again
+		
+		
+    recieve:          
+                      MOV                AH, 1                     ;check if key is pressed
+                      INT                16h
+                      jz                 notsend
+                      JMP                send                      ;if no key pressed, go send mode
+    notsend:          
+		
+    ; no key is pressed, so recieve the data
+                      MOV                DX, 3FDh                  ;line status register
+                      in                 AL, DX                    ;take from the line register into AL
+                      AND                al, 1                     ;check if its not empty
+                      JZ                 recieve                   ;if it's empty, go recieve mode again (loop)
+		
+    ; status register is not empty, theres data in the recieve com port
+                      MOV                DX, 03F8h
+                      in                 al, dx                    ;take data from the port
+                      MOV                INPUT, al
+                      CMP                INPUT, 27                 ;check if its esc
+                      JNE                dontexit
+                      JMP                exit                      ;if esc, exit
+    dontexit:         
+		
+                      CMP                INPUT, 0DH                ;check if enter
+                      JNE                continue_recieve
+		
+                      CMP                y_reciever, 24            ;check if y is at the end
+                      JNE                printR                    ;if not, continue print at current
+		
+    ; if y is at the end
+                      clearLowerScreen                             ;clear reciever screen part
+                      mov                x_reciever, 0             ;reset x pos
+    ;MOV y_reciever, 0Dh	;reset y pos
+                      setCursor          x_reciever, y_reciever    ;reset cursor position
+                      JMP                print_reciever
+	
+    ; if key is enter and y is not at the edge
+    printR:           
+                      INC                y_reciever
+                      MOV                x_reciever, 0
+	
+    continue_recieve: 
+                      setCursor          x_reciever, y_reciever
+                      CMP                x_reciever, 79            ;check if x as at the edge
+                      JNE                print_reciever            ;if no, just print
+	
+    ; x is at the edge, lets also check y
+                      CMP                y_reciever, 24
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;edit? if not, go new line?
+                      JNE                print_reciever            ;if not, just print
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;edit?
+    ; if y is also at edge, clear reciever screen
+                      clearLowerScreen
+                      MOV                x_reciever, 0
+    ;MOV y_reciever, 0Dh
+                      setCursor          x_reciever, y_reciever
+	
+    print_reciever:   
+                      MOV                AH, 2
+                      MOV                DL, INPUT
+                      INT                21h
+		
+                      saveCursorReciever
+                      JMP                main_loop
     
-                          pop  dx
-                          pop  cx
-                          pop  bx
-                          pop  ax
-                          ret
-Scroll_Screen_Remote ENDP
+    exit:             
+                      MOV                AH, 4ch
+                      INT                21h
 
-Clear_Screen PROC
-                          mov  ah, 06h                  ; BIOS function to scroll up and clear screen
-                          mov  al, 0                    ; Clear the screen
-                          mov  bh, 07h                  ; Attribute (default)
-                          mov  cx, 0                    ; Upper left corner (row 0, column 0)
-                          mov  dx, 184Fh                ; Lower right corner (row 25, column 79)
-                          int  10h                      ; Call BIOS interrupt to clear the screen
-                          ret
-Clear_Screen ENDP
-
-Global_Exit_Sequence PROC
-                          call Send_Exit_Signal         ; Send exit signal to receiver
-                          mov  exitFlag, 1              ; Set exit flag
-                          ret
-Global_Exit_Sequence ENDP
-
-Exit_Program PROC
-                          mov  ah, 09h
-                          mov  dx, offset goodbyeMsg
-                          int  21h
-
-                          mov  ah, 4Ch                  ; Terminate program
-                          int  21h
-Exit_Program ENDP
-
-chat PROC FAR
-                          mov  ax, @data
-                          mov  ds, ax
-
-                          call Clear_Screen
-                          call Initialize_UART
-
-    Main_Loop:            
-                          call Handle_Keyboard_Input
-                          call Handle_UART_Input
-
-                          cmp  exitFlag, 1              ; Check if exit flag is set
-                          je   Exit_Program
-
-                          jmp  Main_Loop                ; Near jump to loop
-chat ENDP
-
-END chat
+chat endp
+end chat
