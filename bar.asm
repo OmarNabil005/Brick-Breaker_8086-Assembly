@@ -1,9 +1,9 @@
 drawPixel macro color, X, Y
     mov ah, 0Ch         ; draw pixel interrupt
-    mov al, color         ; light Gray
+    mov al, color       ; light Gray
     mov bh, 0h          ; page num
-    mov cx, X        ; x
-    mov dx, Y        ; y
+    mov cx, X           ; x
+    mov dx, Y           ; y
     int 10h
 endm
 
@@ -25,9 +25,8 @@ public playerTwoBarRight
 public barTop
 
 .DATA
-    barX1 dw 60d
-    barX2 dw 210d
-    barY dw 170d
+    barTop dw 170d
+    barBottom equ 180d
     playerOneBarLeft dw 60d
     playerOneBarRight dw 109d
     playerTwoBarLeft dw 210d
@@ -47,11 +46,9 @@ public barTop
     playerTwoBarLeftThreshold equ 160d
     playerTwoBarRightThreshold equ 320d
 
-    barOneDrawThreshold equ 109d
-    barTwoDrawThreshold equ 259d
-
-    barTop dw 170d
-    barBottom equ 180d
+    barX1 dw 60d
+    barX2 dw 210d
+    barY dw 170d
 
     speed db 04h
     speedCounter db 02h
@@ -61,7 +58,7 @@ Bar PROC FAR
     drawHorizontal1:                        ; outer loop (draws horizontal lines)
         mov barY, barTopInitial             ; start at Y = 450
         inc barX1                           ; start at X = 270
-        cmp barX1, barOneDrawThreshold      ; end at X = 370 -> width = 100
+        cmp barX1, playerOneBarRightInitial      ; end at X = 370 -> width = 100
         jna cont1                           ; handle jump out of range
         jmp drawsecond
         cont1:
@@ -79,7 +76,7 @@ Bar PROC FAR
      drawHorizontal2:                       ; outer loop (draws horizontal lines)
         mov barY, barTopInitial 
         inc barX2                          
-        cmp barX2, barTwoDrawThreshold      
+        cmp barX2, playerTwoBarRightInitial      
         jna cont2                           ; handle jump out of range
         jmp done
         cont2:
