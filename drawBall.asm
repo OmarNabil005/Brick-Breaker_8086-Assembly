@@ -485,4 +485,27 @@ resetBallSpeed PROC NEAR
 	                    ret
 resetBallSpeed ENDP
 
+resetBallAndBricks PROC FAR
+						call resetBallSpeed
+						call resetActiveBricks
+						ret
+resetBallAndBricks ENDP
+
+resetActiveBricks PROC NEAR
+	                    mov  cx, 45
+	                    mov  si, 0
+	resetActiveBricks_loop:
+	                    mov  active_bricks[si], 1
+	                    add  si, 2
+	                    loop resetActiveBricks_loop
+	                    ret
+resetActiveBricks ENDP
+
+resetBallSpeed PROC NEAR
+						call Reset_Ball_Position
+	                    mov  BALL_X_SPEED, 2
+	                    mov  BALL_Y_SPEED, 5
+	                    ret
+resetBallSpeed ENDP
+
 END Move_Ball
