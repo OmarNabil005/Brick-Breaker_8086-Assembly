@@ -13,8 +13,11 @@ endm
 	extrn Draw_Ball:FAR
 	extrn Draw_B_Ball:FAR
 	extrn Bar:FAR
-	extrn moveLeft:FAR
-	extrn moveRight:FAR
+	extrn movePlayerOneLeft:FAR
+	extrn movePlayerOneRight:FAR
+	extrn movePlayerTwoLeft:FAR
+	extrn movePlayerTwoRight:FAR
+
 	extrn TIME_STORE:byte
 	extrn resetBallAndBricks:FAR
 	extrn resetBar:FAR
@@ -40,6 +43,8 @@ endm
 .CODE
 
 GAME proc far
+				mov		 ax, @data
+				mov		 ds, ax
 
 	           clearscreen
 			   Call		   resetAll
@@ -73,15 +78,26 @@ GAME proc far
 
 	           cmp         ah, 4Bh
 	           jne         checkRight   	; if not left arrow, check right arrow
-	           call        moveLeft
+	           call        movePlayerOneLeft
 	           jmp         checkKey
 
 	checkRight:
 	           cmp         ah, 4Dh
-	           jne         checkEsc     	; if not right arrow, check next key
-	           call        moveRight
+	           jne         checkPlayerTwoLeft     	; if not right arrow, check next key
+	           call        movePlayerOneRight
 	           jmp         checkKey
 
+	checkPlayerTwoLeft:
+			   cmp         ah, 1Eh
+	           jne         checkPlayerTwoRight
+	           call        movePlayerTwoLeft
+	           jmp         checkKey
+	
+	checkPlayerTwoRight:
+			   cmp         ah, 20h
+	           jne         checkEsc
+	           call        movePlayerTwoRight
+	           jmp         checkKey
 
 	checkEsc:  
 	           cmp         ah, 1
