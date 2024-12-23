@@ -13,6 +13,7 @@ public Bar
 public moveLeft
 public moveRight
 public speed
+public resetBar
 
 .MODEL SMALL
 .STACK 100h
@@ -34,19 +35,6 @@ public barBottom
 .CODE
 Bar PROC FAR
     
-    mov ax, @DATA
-    mov ds, ax
-
-    clearScreen
-
-    mov ah, 0h              ; enter video mode
-    mov al, 13h             ; 320 * 200 -> 256 colors 
-    int 10h
-
-    mov ah, 0Bh             ; set background color to black
-    mov bx, 0h
-    int 10h
-
     drawHorizontal:         ; outer loop (draws horizontal lines)
         mov cx, barTop
         mov barY, cx        ; start at Y = 450
@@ -162,5 +150,13 @@ proc moveRight FAR
     exitRight:
     ret
 endp moveRight
+
+resetBar PROC FAR
+    mov barLeft, 130d
+    mov barRight, 189d
+    mov barX, 129d
+    mov barY, 170d
+    ret
+resetBar ENDP
 
 END Bar

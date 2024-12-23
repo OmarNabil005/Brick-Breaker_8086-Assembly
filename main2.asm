@@ -16,7 +16,8 @@ endm
 	extrn moveLeft:FAR
 	extrn moveRight:FAR
 	extrn TIME_STORE:byte
-	public live
+	extrn resetBallAndBricks:FAR
+	extrn resetBar:FAR
 	public SCORE
 	public LIVES
 	public LEVEL
@@ -31,7 +32,6 @@ endm
 	.STACK 100h
 
 .DATA
-	live        db 03h
 	LIVES       dw 3
 	LEVEL       dw 1
 	SCORE       dw 0
@@ -42,9 +42,10 @@ endm
 GAME proc far
 
 	           clearscreen
-	           Call        Bar
-	           Call        drawBricks
+			   Call		   resetAll
 	           Call        Display_Stats
+	           Call        drawBricks
+	           Call        Bar
 
 	Check_time:
 	           mov         ah,2ch       	;get system time
@@ -101,7 +102,7 @@ MAIN PROC
 
 
 	           mov         ah,00h       	;set video mode
-	           mov         al,13h       	;choose vedio mode
+	           mov         al,13h       	;choose video mode
 	           int         10h
 
 	           Call        menu
@@ -115,4 +116,14 @@ MAIN PROC
 	           INT         21h          	; Call DOS interrupt
 	
 MAIN ENDP
+
+resetAll PROC NEAR
+	           MOV         LIVES, 3
+	           MOV         SCORE, 0
+			   MOV         LEVEL, 1
+	           MOV         BRICKS_LEFT, 45
+			   call 	   resetBallAndBricks
+			   call 	   resetBar
+	           RET
+resetAll ENDP
 END MAIN
