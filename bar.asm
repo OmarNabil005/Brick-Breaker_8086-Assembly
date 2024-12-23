@@ -1,6 +1,6 @@
 drawPixel macro color, X, Y
     mov ah, 0Ch         ; draw pixel interrupt
-    mov al, color       ; light Gray
+    mov al, color
     mov bh, 0h          ; page num
     mov cx, X           ; x
     mov dx, Y           ; y
@@ -52,6 +52,10 @@ public barTop
 
     speed db 04h
     speedCounter db 02h
+
+    ; colors
+    grey equ 07h
+    black equ 0h
 .CODE
 Bar PROC FAR
 
@@ -64,7 +68,7 @@ Bar PROC FAR
         cont1:
 
     drawVertical1:                          ; inner loop (draws vertical lines)
-        drawPixel 07h, barX1, barY
+        drawPixel grey, barX1, barY
 
         inc barY
         cmp barY, barBottom      
@@ -82,7 +86,7 @@ Bar PROC FAR
         cont2:
 
     drawVertical2:                          ; inner loop (draws vertical lines)
-        drawPixel 07h, barX2, barY
+        drawPixel grey, barX2, barY
 
         inc barY
         cmp barY, barBottom      
@@ -102,7 +106,7 @@ moveLeftlabel:
     jmp exit
 
     eraseRightCol:
-        drawPixel 0h, playerOneBarRight, barY
+        drawPixel black, playerOneBarRight, barY
 
         inc barY
         cmp barY, barBottom
@@ -113,7 +117,7 @@ moveLeftlabel:
     mov barY, cx            ; reset barY to match top
 
     drawLeftCol:
-        drawPixel 07h, playerOneBarLeft, barY
+        drawPixel grey, playerOneBarLeft, barY
 
         inc barY
         cmp barY, barBottom
@@ -137,7 +141,7 @@ moveRightlabel:
     jmp exitRight
 
     drawRightCol:
-        drawPixel 07h, playerOneBarRight, barY 
+        drawPixel grey, playerOneBarRight, barY 
 
         inc barY            
         cmp barY, barBottom
@@ -147,7 +151,7 @@ moveRightlabel:
     mov barY, barTopInitial            ; reset barY to match top
 
     eraseLeftCol:
-        drawPixel 0h, playerOneBarLeft, barY
+        drawPixel black, playerOneBarLeft, barY
 
         inc barY
         cmp barY, barBottom
@@ -170,7 +174,7 @@ moveLeftlabel1:
     jmp exit2
 
     eraseRightCol1:
-        drawPixel 0h, playerTwoBarRight, barY
+        drawPixel black, playerTwoBarRight, barY
 
         inc barY
         cmp barY, barBottom
@@ -180,7 +184,7 @@ moveLeftlabel1:
     mov barY, barTopInitial            ; reset barY to match top
 
     drawLeftCol1:
-        drawPixel 07h, playerTwoBarLeft, barY
+        drawPixel grey, playerTwoBarLeft, barY
         inc barY
         cmp barY, barBottom
         jne drawLeftCol1
@@ -203,7 +207,7 @@ moveRightlabel2:
     jmp exitRight2
 
     drawRightCol2:
-        drawPixel 07h, playerTwoBarRight, barY       
+        drawPixel grey, playerTwoBarRight, barY       
         inc barY            
         cmp barY, barBottom
         jne drawRightCol2
@@ -212,7 +216,7 @@ moveRightlabel2:
     mov barY, barTopInitial            ; reset barY to match top
 
     eraseLeftCol2:
-        drawPixel 0h, playerTwoBarLeft, barY
+        drawPixel black, playerTwoBarLeft, barY
         inc barY
         cmp barY, barBottom
         jne eraseLeftCol2
