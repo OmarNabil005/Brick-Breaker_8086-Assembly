@@ -22,7 +22,6 @@ endm
 	EXTRN playerOneBarRight:word
 	EXTRN playerTwoBarRight:word
 	EXTRN barTop:word
-	EXTRN barBottom:word
 
 	public TIME_STORE
 	public Move_Ball
