@@ -42,13 +42,13 @@ endm
     EXTRN barTop:word
 	extrn bar:far
 	;extrn GAME:FAR
-	;extrn loss:FAR
-	;EXTRN SCORE:word
-    ;EXTRN LIVES_1:word
-	;extrn LIVES_2:word
-    ; EXTRN LEVEL_1:word
+	extrn loss:FAR
+	EXTRN SCORE:word
+    EXTRN LIVES:word
+    EXTRN LEVEL:word
+    EXTRN BRICKS_LEFT:word
+	extrn LIVES_2:word
 	; EXTRN LEVEL_2:word
-    ; EXTRN BRICKS_LEFT_1:word
 	; EXTRN BRICKS_LEFT_2:word
 	; EXTRN playerOneBarLeft:word
 	; EXTRN playerTwoBarLeft:word
@@ -63,8 +63,8 @@ endm
 	; public Draw_B_Ball
 	; public BALL_X
 	; public BALL_Y
-	; public BALL_X_SPEED
-	; public BALL_Y_SPEED
+	public BALL_X_1_SPEED
+	public BALL_Y_1_SPEED
 	public resetBallAndBricks
 
 	public Move_Ball
@@ -131,16 +131,16 @@ endm
 
 
 Move_Ball PROC FAR
-	                    MOV  AX,BALL_X_1_SPEED
-	                    ADD  BALL_1_X,AX               	;inc ball x pos with velocity
+		MOV  AX,BALL_X_1_SPEED
+		ADD  BALL_1_X,AX               	;inc ball x pos with velocity
+		MOV  AX,BALL_X_2_SPEED
+		ADD  BALL_2_X,AX               	;inc ball x pos with velocity
 
-	                    mov  ax,BALL_Y_1_SPEED
-	                    ADD  BALL_1_Y,AX               	;inc ball x pos with velocity
+		mov  ax,BALL_Y_2_SPEED
+		ADD  BALL_2_Y,AX               	;inc ball x pos with velocity
 
-						initPort
-
-						call send_all
-						call recieve_all
+		mov  ax,BALL_Y_1_SPEED
+		ADD  BALL_1_Y,AX               	;inc ball x pos with velocity
 
 
 		call check_walls
@@ -235,103 +235,6 @@ wait2:
 
 endp recieve_all
 
-; send_ball_1_x PROC
-;     ; Wait until THR is empty
-;     MOV     DX, 3FDh            ; Line Status Register
-; .wait1:
-;     IN      AL, DX
-;     AND     AL, 00100000b       ; Check if THR is empty
-;     JZ      .wait1              ; Wait if not empty
-
-;     ; Send lower byte
-;     MOV     DX, 3F8h            ; Transmit Holding Register
-;     MOV     AL, BYTE PTR [BALL_1_X]
-;     OUT     DX, AL
-
-;     RET
-; send_ball_1_x ENDP
-
-; send_ball_1_y PROC
-;     ; Wait until THR is empty
-;     MOV     DX, 3FDh
-; .wait11:
-;     IN      AL, DX
-;     AND     AL, 00100000b
-;     JZ      .wait11
-
-;     ; Send lower byte
-;     MOV     DX, 3F8h
-;     MOV     AL, BYTE PTR [BALL_1_Y]
-;     OUT     DX, AL
-
-;     ; Wait for THR to be empty again
-; .wait22:
-;     IN      AL, DX
-;     AND     AL, 00100000b
-;     JZ      .wait22
-
-;     ; Send higher byte
-;     MOV     AL, BYTE PTR [BALL_1_Y+1]
-;     OUT     DX, AL
-
-;     RET
-; send_ball_1_y ENDP
-
-; ;-------------------------------------------------
-; ; Receive Ball 2 X Position
-; recieve_ball_2_x PROC
-;     ; Wait for data in RHR
-;     MOV     DX, 3FDh
-; .wait3:
-;     IN      AL, DX
-;     AND     AL, 00000001b       ; Check if data is available
-;     JZ      .wait3              ; Wait if no data
-
-;     ; Receive lower byte
-;     MOV     DX, 3F8h
-;     IN      AL, DX
-;     MOV     BYTE PTR [BALL_2_X], AL
-
-;     ; Wait for next data byte
-; .wait4:
-;     IN      AL, DX
-;     AND     AL, 00000001b
-;     JZ      .wait4
-
-;     ; Receive higher byte
-;     IN      AL, DX
-;     MOV     BYTE PTR [BALL_2_X+1], AL
-
-;     RET
-; recieve_ball_2_x ENDP
-
-; ;-------------------------------------------------
-; ; Receive Ball 2 Y Position
-; recieve_ball_2_y PROC
-;     ; Wait for data in RHR
-;     MOV     DX, 3FDh
-; .wait5:
-;     IN      AL, DX
-;     AND     AL, 00000001b
-;     JZ      .wait5
-
-;     ; Receive lower byte
-;     MOV     DX, 3F8h
-;     IN      AL, DX
-;     MOV     BYTE PTR [BALL_2_Y], AL
-
-;     ; Wait for next data byte
-; .wait6:
-;     IN      AL, DX
-;     AND     AL, 00000001b
-;     JZ      .wait6
-
-;     ; Receive higher byte
-;     IN      AL, DX
-;     MOV     BYTE PTR [BALL_2_Y+1], AL
-
-;     RET
-; recieve_ball_2_y ENDP
 
 check_walls proc 
 check_left_wall:    
@@ -344,7 +247,7 @@ check_left_wall:
 	second_ball_left: 
 	;second Ball with left wall         
 						mov  ax,WINDOW_BOUNCE
-						add  ax, 162
+						add  ax, 161
 	                    cmp  BALL_2_X,ax
 	                    jge  dont_left_jump               	;if it collides with left wall
 	                    MOV  BALL_2_X, ax              	;adjustment to avoid getting stuck
@@ -412,7 +315,7 @@ check_left_wall:
 						sub  ax,GAME_WINDOW
 	                    cmp  BALL_1_Y,ax
 	                    jle  second_ball_bottom        	;if it collides with bottom wall
-						NEG BALL_Y_1_SPEED
+						;NEG BALL_Y_1_SPEED
 						;JMP  Reset_Ball_1_Position             	;jge
 	;======to avoid getting stuck======
 	                    mov  ax, WINDOW_HEIGHT
@@ -420,13 +323,13 @@ check_left_wall:
 	                    sub  ax, WINDOW_BOUNCE
 	                    sub  ax, GAME_WINDOW
 
-	                    ; dec  LIVES_1
-						; jnz comp
-						; call loss
+	                    dec  LIVES
+						jnz comp
+						call loss
 						comp:
 	                    mov  BALL_1_Y, ax              	;to avoid gettings tuck
 	;===================================
-	                    ;jmp  reset_position
+	                    jmp  reset_position
 
 second_ball_bottom:
 	;second ball with bottom wall
@@ -438,18 +341,18 @@ second_ball_bottom:
 
 	                    cmp  BALL_2_Y,ax
 	                    jle  dont_jump_this_y         	;if it collides with bottom wall
-						NEG BALL_Y_2_SPEED
-						;JMP  Reset_Ball_2_Position             	;jge	
+						;NEG BALL_Y_2_SPEED
 	;======to avoid getting stuck======
 						mov  ax, WINDOW_HEIGHT
 	                    sub  ax, BALL_SIZE
 	                    sub  ax, WINDOW_BOUNCE
 	                    sub  ax, GAME_WINDOW
-	                    ; dec  LIVES_2
-						; jnz comp2
-						; call loss
+	                    dec  LIVES_2
+						jnz comp2
+						call loss
 						comp2:
 	                    mov  BALL_2_Y, ax              	;to avoid gettings tuck								
+						JMP  Reset_Ball_2_Position             	;jge	
 
 	dont_jump_this_y:   
 	ret
@@ -906,14 +809,15 @@ check_collision_left PROC near
 	                    je   no_index                	;no collision happened
 
 	                    mov  active_bricks_1[di],0     	;if collision happens deactivate brick
-	                    ;dec  BRICKS_LEFT             	; Reduce brick count
-	                    ;inc  SCORE                   	; Increase score by 1
+	                    dec  BRICKS_LEFT             	; Reduce brick count
+	                    inc  SCORE                   	; Increase score by 1
 	
-	                    ;cmp  BRICKS_LEFT, 30          	; Check if all bricks are cleared
-	                    ;jne  draw_next_brick
-	                    ;call level_up                	;Level up logic if all bricks are cleared
-						;jmp  no_index
-   
+	                    cmp  BRICKS_LEFT, 30          	; Check if all bricks are cleared
+	                    jne  draw_next_brick
+	                    call level_up                	;Level up logic if all bricks are cleared
+						jmp  no_index
+
+						draw_next_brick:
 	                    mov  cx,bricks_initial_x_left[si]
 	                    mov  dx,bricks_initial_y[bx]
 	                    mov  al,0
@@ -1033,22 +937,22 @@ check_collision_right PROC near
 	                    ret
 check_collision_right ENDP
 
-; level_up PROC NEAR
-;     inc  LEVEL                   ; Increase level
-;     mov  BRICKS_LEFT, 45         ; Reset brick count
+level_up PROC NEAR
+    inc  LEVEL                   ; Increase level
+    mov  BRICKS_LEFT, 25         ; Reset brick count
     
-;     ; Ensure clean state for next level
-;     call resetBallSpeed
-;     call resetActiveBricks
+    ; Ensure clean state for next level
+    call resetBallSpeed
+    call resetActiveBricks
 
-;     ; Increase difficulty
-;     mov  ax, LEVEL              ; Load current level
-;     add  BALL_X_SPEED, ax       ; Proportional speed increase
-;     add  BALL_Y_SPEED, ax
+    ; Increase difficulty
+    mov  ax, LEVEL              ; Load current level
+    add  BALL_X_1_SPEED, ax       ; Proportional speed increase
+    add  BALL_Y_1_SPEED, ax
     
-;     call drawBricks
-;     ret
-; level_up ENDP
+    call drawBricksLeft
+    ret
+level_up ENDP
 
 resetBallAndBricks PROC FAR
 						call resetBallSpeed

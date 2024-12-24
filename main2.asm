@@ -56,6 +56,7 @@ endm
 	extrn resetBar:FAR
 	public SCORE
 	public LIVES
+	public LIVES_2
 	public LEVEL
 	public BRICKS_LEFT_1
 	public BRICKS_LEFT_2
@@ -69,6 +70,7 @@ endm
 
 .DATA
 	LIVES       dw 3
+	LIVES_2 	dw 3
 	LEVEL       dw 1
 	SCORE       dw 0
 	BRICKS_LEFT_1 dw 25
@@ -118,8 +120,11 @@ GAME PROC FAR
 		Call Draw_Ball_1
 		Call Draw_Ball_2
 
-		;CALL check_local
-		;CALL check_remote
+		call display_stats
+
+
+		CALL check_local
+		CALL check_remote
 
 		JMP Check_time
 
@@ -210,6 +215,7 @@ check_remote ENDP
 
 resetAll PROC NEAR
 	MOV         LIVES, 3
+	MOV         LIVES_2, 3
 	MOV         SCORE, 0
 	MOV         LEVEL, 1
 	MOV         BRICKS_LEFT_1, 25

@@ -246,7 +246,6 @@ moveSecondBar proc FAR
     cmp barTwoLeft, ax
     jg moveLeft
     jmp moveRight
-
     moveLeft:
     mov ax, barTwoLeft
     sub ax, playerTwoBarLeft
@@ -254,14 +253,12 @@ moveSecondBar proc FAR
     mov barTwoSpeedCounter, ax
 eraseRightColl:
         drawPixel black, playerTwoBarRight, barY
-
         inc barY
         cmp barY, barBottom
         jne eraseRightColl
     
     dec playerTwoBarRight                     ; move left
     mov barY, barTopInitial             ; reset barY to match top
-
     drawLeftColl:
         drawPixel grey, barTwoLeft, barY
         inc barY
@@ -273,7 +270,6 @@ eraseRightColl:
     dec barTwoSpeedCounter              ; for (speedCounter = speed; speedCounter > 0; --speedCounter) move left
     jnz eraseRightColl
     jmp finished
-
     moveRight:
     mov ax, playerTwoBarLeft
     sub ax, barTwoLeft
@@ -287,7 +283,6 @@ eraseRightColl:
     
     inc playerTwoBarRight            ; move right
     mov barY, barTopInitial            ; reset barY to match top
-
     eraseLeftColl:
         drawPixel black, barTwoLeft, barY
         inc barY
@@ -298,10 +293,8 @@ eraseRightColl:
     mov barY, barTopInitial            ; reset barY to match top
     dec barTwoSpeedCounter        ; for (speedCounter = speed; speedCounter > 0; --speedCounter) move left
     jnz drawRightColl
-
     finished:
     ret
-
 moveSecondBar ENDP
 
 resetBar PROC FAR

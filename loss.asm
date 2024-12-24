@@ -2,11 +2,14 @@ extrn menu:far
 extrn LEVEL:word
 extrn resetActiveBricks:far
 public loss
+EXTRN LIVES:word
+EXTRN LIVES_2:word
 
 .MODEL SMALL
 .STACK 100h
 .DATA
     GameOverText DB 'Game Over$', 0
+    YouWinText   DB 'You won$', 0
     ExitOption   DB '1. Exit$', 0
     MenuOption   DB '2. Back to Menu$', 0
 
@@ -53,12 +56,16 @@ Clear_Screen PROC NEAR
                    push   cx
                    push   dx
 
-                   mov    ax, 0600h           ; Scroll up window
+                   mov    ah, 06h           ; Scroll up window
+                   mov al, 0
                    mov    bh, 07h             ; Fill entire window with this attribute
                    mov    cx, 0               ; Upper left corner (row 0, col 0)
                    mov    dx, 184fh           ; Lower right corner (row 24, col 79)
                    int    10h                 ; BIOS interrupt
 
+                   mov ah, 0
+                   mov al, 3
+                   int 10h
                    pop    dx
                    pop    cx
                    pop    bx
@@ -76,13 +83,23 @@ loss PROC FAR
     ; Clear the screen
                    call   Clear_Screen
 
+                   cmp LIVES, 0
+                jne win
+                    
     ; Display 'Game Over' in the middle of the screen
                    mov    dh, 12              ; Middle row (approx.)
                    mov    dl, 15              ; Center column (approx.)
                    call   Set_Cursor
                    lea    dx, GameOverText
                    call   Display_String
-
+                   jmp display_label
+                   win:
+                   mov    dh, 12              ; Middle row (approx.)
+                   mov    dl, 15              ; Center column (approx.)
+                   call   Set_Cursor
+                   lea    dx, YouWinText
+                   call   Display_String
+display_label:
     ; Display Exit option
                    mov    dh, 14              ; Below 'Game Over'
                    mov    dl, 15              ; Center column (approx.)
@@ -98,23 +115,8 @@ loss PROC FAR
                    call   Display_String
 
     ; Wait for valid user input
-    WaitForInput:  
-
-                   mov  ah, 01h                  ; Check if key is in keyboard buffer
-                   int  16h
-                   jz   WaitForInput
-
-                   mov    ah, 0h             ; BIOS function to read key
-                   int    16h                 ; Get key press
-
-                   cmp    al, '1'             ; Check if '1' was pressed
-                   je     ExitProgram         ; Jump to exit if '1'
-
-                   cmp    al, '2'             ; Check if '2' was pressed
-                   je     BackToMenu          ; Jump to menu if '2'
-
-    ; If invalid input, wait for another key press
-                   jmp    WaitForInput
+    call check_local_loss
+    call check_remote_loss
 
     ExitProgram:   
     ; Exit the program (INT 20h - Terminate Program)
@@ -126,5 +128,77 @@ loss PROC FAR
                    ret                        ; Return to caller
 
 loss ENDP
+
+check_local_loss proc
+    checkKey:                                      	; scan codes *** left arrow -> 4B, right arrow -> 4D , esc -> 1
+	                 mov         ah, 1             	; peek keyboard buffer
+	                 int         16h
+	                 jnz         get_key           	; jump to wherever you want later to keep logic going if no key was pressed
+	                 call        check_remote_loss
+	;Key exists
+		
+	get_key:         
+	                 mov         ah, 0             	; get key (and clear keyboard buffer)
+	                 int         16h
+	;;;;;;;SENDING KEY TO PORT;;;;;;;;;;;;;
+		
+	                 mov         dx,3FDH           	;Line Status Register
+	                 in          al , dx           	;Read Line Status
+	                 AND         al , 00100000b
+	                 jnz          send         	;Not empty
+                    call        check_remote_loss
+
+                     send:
+	                 mov         dx, 3F8H          	;Transmit data register
+	                 mov         al, ah            	;put the data into al
+	                 out         dx, al            	;sending the data
+	;;;;;;;;;;;;;;;;;;;;;;;;;;
+	                 cmp         ah, 2 ;exit
+	                 je         end_local        	; if not left arrow, check right arrow
+	;left arrow key
+	                 cmp         ah, 3;continue
+	                 jne         check_remote_2          	; if not right arrow, check next key
+	;right arrow key
+	;send right arrow to port
+	                 CALL         menu
+                     ret
+	;jmp         exitt
+	end_local:       
+	; Terminate program
+                   mov            ah, 4Ch
+                   int            21h
+	                ret
+    check_remote_2:
+        call check_remote_loss
+        ret
+check_local_loss ENDP
+check_remote_loss PROC
+	                 MOV         DX, 3FDh          	;line status register
+	                 in          AL, DX            	;take from the line register into AL
+	                 AND         al, 1             	;check if its not empty
+	                 Jnz          cont       	;if it's empty, go recieve mode again (loop)
+                     call check_local_loss
+     cont:                
+	; status register is not empty, theres data in the recieve com port
+	                 MOV         DX, 03F8h
+	                 in          al, dx            	;take key from the port, store in al
+		;;;;;;;;;;;;;;;
+
+	                 cmp         al, 2;exit
+	                 je         exit_remote  	; if not left arrow, check right arrow
+
+                    cmp al, 3;menu
+                    jne return
+	                 call        menu
+
+	exit_remote:     
+    ; Terminate program
+                   mov            ah, 4Ch
+                   int            21h
+                   ret
+    return:
+	                 call check_local_loss
+                     ret
+check_remote_loss ENDP
 
 END loss
