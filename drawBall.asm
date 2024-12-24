@@ -121,6 +121,8 @@ endm
 	                	dw  1, 1, 1, 1,1
 	                	dw  1, 1, 1, 1,1
 	bar_height EQU 10
+
+	doubleScore db 0
 					
 
 .CODE
@@ -805,6 +807,10 @@ check_collision_left PROC near
 
 	                    mov  active_bricks_1[di],0     	;if collision happens deactivate brick
 	                    dec  BRICKS_LEFT_1             	; Reduce brick count
+						cmp doubleScore, 1
+						jne normal
+						inc SCORE                   	; Increase score by 1
+						normal:
 	                    inc  SCORE                   	; Increase score by 1
 						push AX
 						push BX
@@ -835,7 +841,9 @@ check_collision_left PROC near
 	another_check:				
 						cmp di,26
 						jne rett
-						add SCORE, 3
+						
+						add SCORE, 2
+						mov doubleScore, 1
 						cmp BALL_X_1_SPEED,0
 						jg incer
 						sub BALL_X_1_SPEED,2
