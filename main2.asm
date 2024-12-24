@@ -31,6 +31,7 @@ clearscreen macro
 				mov         ah,00h       	;set video mode
 				mov         al,13h       	;choose video mode
 				int         10h
+				
 endm
 	
 	extrn display_stats:FAR

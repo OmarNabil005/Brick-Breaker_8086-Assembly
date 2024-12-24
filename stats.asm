@@ -3,7 +3,7 @@ extrn LEVEL: word
 extrn LIVES: word
 
 public Display_Stats
-
+public Convert_Number
 .MODEL SMALL
 .STACK 100h
 .DATA
@@ -18,7 +18,7 @@ public Display_Stats
 .STARTUP
 
     ; Procedure to convert a 16-bit number to decimal string
-Convert_Number PROC NEAR
+Convert_Number PROC FAR
     ; Input: AX = number to convert
     ; Output: Converts number to decimal string at DS:DI
                        push bx

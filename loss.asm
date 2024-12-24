@@ -1,15 +1,21 @@
 extrn menu:far
 extrn LEVEL:word
 extrn resetActiveBricks:far
+extrn Convert_Number:far
 public loss
 EXTRN LIVES:word
 EXTRN LIVES_2:word
+EXTRN BRICKS_LEFT_1:word
+EXTRN BRICKS_LEFT_2:word
+EXTRN SCORE:word
 
 .MODEL SMALL
 .STACK 100h
 .DATA
     GameOverText DB 'Game Over$', 0
     YouWinText   DB 'You won$', 0
+    ScoreText    DB 'Your Score:$',0
+    CurScore     DB 4 dup("$")
     ExitOption   DB '1. Exit$', 0
     MenuOption   DB '2. Back to Menu$', 0
 
@@ -82,10 +88,18 @@ loss PROC FAR
 
     ; Clear the screen
                    call   Clear_Screen
-
+                   
                    cmp LIVES, 0
-                jne win
-                    
+                je losee
+
+;;; COMPARE TWO BRICKS LEFT
+                    mov ax, bricks_left_2
+                    cmp bricks_left_1, ax
+                    jg losee
+                    jle win
+;;;;;;;;;;;;;;;;;;;;
+
+                losee:
     ; Display 'Game Over' in the middle of the screen
                    mov    dh, 12              ; Middle row (approx.)
                    mov    dl, 15              ; Center column (approx.)
@@ -99,16 +113,31 @@ loss PROC FAR
                    call   Set_Cursor
                    lea    dx, YouWinText
                    call   Display_String
+
+                    
 display_label:
+                    mov dh, 14
+                    mov dl, 15
+                    call Set_Cursor
+                    lea dx, ScoreText
+                    call Display_String
+                    mov dh, 14
+                    mov dl, 28
+                    call Set_cursor
+                    lea di, CurScore
+                    mov AX, SCORE
+                    call Convert_Number
+                    lea dx, CurScore
+                    call Display_String
     ; Display Exit option
-                   mov    dh, 14              ; Below 'Game Over'
+                   mov    dh, 16              ; Below 'Game Over'
                    mov    dl, 15              ; Center column (approx.)
                    call   Set_Cursor
                    lea    dx, ExitOption
                    call   Display_String
 
     ; Display Menu option
-                   mov    dh, 15              ; Below Exit option
+                   mov    dh, 17              ; Below Exit option
                    mov    dl, 15              ; Center column (approx.)
                    call   Set_Cursor
                    lea    dx, MenuOption

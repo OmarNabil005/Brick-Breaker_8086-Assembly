@@ -19,6 +19,15 @@ initPort MACRO
 	         MOV AL, 00011011b
 	         OUT DX, AL
 ENDM
+
+drawPixel macro color, X, Y
+    mov ah, 0Ch         ; draw pixel interrupt
+    mov al, color
+    mov bh, 0h          ; page num
+    mov cx, X           ; x
+    mov dx, Y           ; y
+    int 10h
+endm
 clearscreen macro
 	            MOV ax, 0600h	; Scroll up intterupt
 	            MOV bh, 00h
@@ -26,6 +35,7 @@ clearscreen macro
 	            MOV dh, 25   	; bottom row
 	            MOV dl, 80   	; right column
 	            int 10h      	; call the interrupt
+				
 endm
 
 	EXTRN bricks_initial_y:word
@@ -46,7 +56,8 @@ endm
 	EXTRN SCORE:word
     EXTRN LIVES:word
     EXTRN LEVEL:word
-    EXTRN BRICKS_LEFT:word
+    EXTRN BRICKS_LEFT_1:word
+	EXTRN BRICKS_LEFT_2:word
 	extrn LIVES_2:word
 	; EXTRN LEVEL_2:word
 	; EXTRN BRICKS_LEFT_2:word
@@ -244,6 +255,8 @@ check_left_wall:
 	                    jge  second_ball_left               	;if it collides with left wall
 	                    MOV  BALL_1_X, ax              	;adjustment to avoid getting stuck
 	                    NEG  BALL_X_1_SPEED             	;jle
+						
+						
 	second_ball_left: 
 	;second Ball with left wall         
 						mov  ax,WINDOW_BOUNCE
@@ -315,7 +328,7 @@ check_left_wall:
 						sub  ax,GAME_WINDOW
 	                    cmp  BALL_1_Y,ax
 	                    jle  second_ball_bottom        	;if it collides with bottom wall
-						;NEG BALL_Y_1_SPEED
+						NEG BALL_Y_1_SPEED
 						;JMP  Reset_Ball_1_Position             	;jge
 	;======to avoid getting stuck======
 	                    mov  ax, WINDOW_HEIGHT
@@ -323,13 +336,13 @@ check_left_wall:
 	                    sub  ax, WINDOW_BOUNCE
 	                    sub  ax, GAME_WINDOW
 
-	                    dec  LIVES
-						jnz comp
-						call loss
+	                    ; dec  LIVES
+						; jnz comp
+						; call loss
 						comp:
 	                    mov  BALL_1_Y, ax              	;to avoid gettings tuck
 	;===================================
-	                    jmp  reset_position
+	                    ; jmp  reset_position
 
 second_ball_bottom:
 	;second ball with bottom wall
@@ -338,21 +351,21 @@ second_ball_bottom:
 	                    sub  ax, BALL_SIZE
 	                    sub  ax, WINDOW_BOUNCE
 						sub  ax, GAME_WINDOW
-
 	                    cmp  BALL_2_Y,ax
 	                    jle  dont_jump_this_y         	;if it collides with bottom wall
-						;NEG BALL_Y_2_SPEED
+						NEG BALL_Y_2_SPEED
+
 	;======to avoid getting stuck======
 						mov  ax, WINDOW_HEIGHT
 	                    sub  ax, BALL_SIZE
 	                    sub  ax, WINDOW_BOUNCE
 	                    sub  ax, GAME_WINDOW
-	                    dec  LIVES_2
-						jnz comp2
-						call loss
+	                    ; dec  LIVES_2
+						; jnz comp2
+						; call loss
 						comp2:
 	                    mov  BALL_2_Y, ax              	;to avoid gettings tuck								
-						JMP  Reset_Ball_2_Position             	;jge	
+						; JMP  Reset_Ball_2_Position             	;jge	
 
 	dont_jump_this_y:   
 	ret
@@ -809,12 +822,19 @@ check_collision_left PROC near
 	                    je   no_index                	;no collision happened
 
 	                    mov  active_bricks_1[di],0     	;if collision happens deactivate brick
-	                    dec  BRICKS_LEFT             	; Reduce brick count
+	                    dec  BRICKS_LEFT_1             	; Reduce brick count
 	                    inc  SCORE                   	; Increase score by 1
-	
-	                    cmp  BRICKS_LEFT, 30          	; Check if all bricks are cleared
+						push AX
+						push BX
+						MOV AX, 500         ; Frequency = 500 Hz
+						MOV BX, 50          ; Duration = 50 ms
+						CALL play_sound
+						pop bx
+						pop ax
+
+	                    cmp  BRICKS_LEFT_1, 20          	; Check if all bricks are cleared
 	                    jne  draw_next_brick
-	                    call level_up                	;Level up logic if all bricks are cleared
+	                    call loss                	;Level up logic if all bricks are cleared
 						jmp  no_index
 
 						draw_next_brick:
@@ -914,14 +934,15 @@ check_collision_right PROC near
 	                    je   no_indexx                	;no collision happened
 
 	                    mov  active_bricks_2[di],0     	;if collision happens deactivate brick
-	                    ;dec  BRICKS_LEFT             	; Reduce brick count
+	                    dec  BRICKS_LEFT_2             	; Reduce brick count
 	                    ;inc  SCORE                   	; Increase score by 1
 	
-	                    ;cmp  BRICKS_LEFT, 30          	; Check if all bricks are cleared
-	                    ;jne  draw_next_brick
-	                    ;call level_up                	;Level up logic if all bricks are cleared
-						;jmp  no_index
-   
+	                    cmp  BRICKS_LEFT_2, 20          	; Check if all bricks are cleared
+	                    jne  draw_next_brickk
+	                    call loss                	;Level up logic if all bricks are cleared
+						jmp  no_indexx
+
+						draw_next_brickk:
 	                    mov  cx,bricks_initial_x_right[si]
 	                    mov  dx,bricks_initial_y[bx]
 	                    mov  al,0
@@ -937,22 +958,22 @@ check_collision_right PROC near
 	                    ret
 check_collision_right ENDP
 
-level_up PROC NEAR
-    inc  LEVEL                   ; Increase level
-    mov  BRICKS_LEFT, 25         ; Reset brick count
+; level_up PROC NEAR
+;     inc  LEVEL                   ; Increase level
+;     mov  BRICKS_LEFT_1, 25         ; Reset brick count
     
-    ; Ensure clean state for next level
-    call resetBallSpeed
-    call resetActiveBricks
+;     ; Ensure clean state for next level
+;     call resetBallSpeed
+;     call resetActiveBricks
 
-    ; Increase difficulty
-    mov  ax, LEVEL              ; Load current level
-    add  BALL_X_1_SPEED, ax       ; Proportional speed increase
-    add  BALL_Y_1_SPEED, ax
+;     ; Increase difficulty
+;     mov  ax, LEVEL              ; Load current level
+;     add  BALL_X_1_SPEED, ax       ; Proportional speed increase
+;     add  BALL_Y_1_SPEED, ax
     
-    call drawBricksLeft
-    ret
-level_up ENDP
+;     call drawBricksLeft
+;     ret
+; level_up ENDP
 
 resetBallAndBricks PROC FAR
 						call resetBallSpeed
@@ -990,5 +1011,61 @@ resetBallSpeed PROC NEAR
 	                    ret
 resetBallSpeed ENDP
 
+play_sound PROC
+    ; Input: AX = frequency (in Hz), BX = duration (in milliseconds)
 
+    CMP AX, 0                  ; Check if frequency is zero
+    JE no_sound                ; Skip if no frequency provided
+
+    ; Initialize the PIT clock frequency (1193180) as a 32-bit value
+    MOV DX, 18h                ; Upper 16 bits (1193180 / 65536 = 18)
+    MOV AX, 2E04h              ; Lower 16 bits (1193180 MOD 65536 = 0x2E04)
+
+    ; Divide DX:AX by the frequency (AX contains the frequency)
+    DIV AX                     ; AX = PIT divisor (16-bit result)
+
+    ; Set PIT Channel 2 to square wave generator mode
+    MOV AL, 10110110b          ; Set mode: Channel 2, square wave
+    OUT 43h, AL
+
+    ; Send divisor to PIT
+    MOV AL, AH                 ; High byte of divisor
+    OUT 42h, AL
+    MOV AL, AL                 ; Low byte of divisor
+    OUT 42h, AL
+
+    ; Enable PC speaker
+    IN AL, 61h
+    OR AL, 00000011b           ; Set bits 0 and 1 to enable speaker
+    OUT 61h, AL
+
+    ; Wait for the duration
+    CALL delay                 ; Pass BX to delay (defined below)
+
+    ; Disable PC speaker
+    IN AL, 61h
+    AND AL, 11111100b          ; Clear bits 0 and 1 to disable speaker
+    OUT 61h, AL
+
+no_sound:
+    RET
+play_sound ENDP
+delay PROC
+    ; Input: BX = duration in milliseconds
+
+    PUSH CX               ; Save registers
+    PUSH DX
+
+    ; Each loop iteration is approximately 1 millisecond
+delay_loop:
+    MOV CX, 1193          ; Approximate count for 1 millisecond delay
+inner_loop:
+    LOOP inner_loop
+    DEC BX
+    JNZ delay_loop
+
+    POP DX                ; Restore registers
+    POP CX
+    RET
+delay ENDP
 END Move_Ball
