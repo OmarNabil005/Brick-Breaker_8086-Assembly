@@ -11,7 +11,6 @@ public loss
     MenuOption   DB '2. Back to Menu$', 0
 
 .CODE
-                   PUBLIC loss
 
     ; Procedure to display a string at a specific screen position
 Display_String PROC NEAR

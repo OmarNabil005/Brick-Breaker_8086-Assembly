@@ -111,6 +111,8 @@ GAME PROC FAR
 
 		Call Draw_Ball_1
 		Call Draw_Ball_2
+	
+		call display_stats
 
 		CALL check_local
 		CALL check_remote

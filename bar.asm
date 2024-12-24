@@ -26,11 +26,13 @@ public barTop
 
 .DATA
     barTop dw 170d
-    barBottom equ 180d
     playerOneBarLeft dw 55d
     playerOneBarRight dw 104d
     playerTwoBarLeft dw 216d
     playerTwoBarRight dw 265d
+
+    ; cur value for barTwo
+    barTwoLeft dw 216d
 
     ; initial values for the bars
     playerOneBarLeftInitial equ 55d
@@ -38,6 +40,7 @@ public barTop
     playerTwoBarLeftInitial equ 216d
     playerTwoBarRightInitial equ 265d
     barTopInitial equ 170d
+    barBottom equ 180d
 
 
     ; threshold values for the bars
@@ -51,7 +54,9 @@ public barTop
     barY dw 170d
 
     speed db 04h
-    speedCounter db 02h
+    speedCounter db 04h
+    barTwoSpeed dw 04h
+    barTwoSpeedCounter dw 04h
 
     ; colors
     grey equ 07h
@@ -231,11 +236,80 @@ moveRightlabel2:
     ret
 movePlayerTwoRight endp
 
+moveSecondBar proc FAR
+    mov ax, playerTwoBarLeft
+    cmp barTwoLeft, ax
+    jnz checkLeft
+    jmp finished
+    checkLeft:
+    mov ax, playerTwoBarLeft
+    cmp barTwoLeft, ax
+    jg moveLeft
+    jmp moveRight
+
+    moveLeft:
+    mov ax, barTwoLeft
+    sub ax, playerTwoBarLeft
+    mov barTwoSpeed, ax
+    mov barTwoSpeedCounter, ax
+eraseRightColl:
+        drawPixel black, playerTwoBarRight, barY
+
+        inc barY
+        cmp barY, barBottom
+        jne eraseRightColl
+    
+    dec playerTwoBarRight                     ; move left
+    mov barY, barTopInitial             ; reset barY to match top
+
+    drawLeftColl:
+        drawPixel grey, barTwoLeft, barY
+        inc barY
+        cmp barY, barBottom
+        jne drawLeftColl
+    
+    dec barTwoLeft                      ; move left
+    mov barY, barTopInitial             ; reset barY to match top
+    dec barTwoSpeedCounter              ; for (speedCounter = speed; speedCounter > 0; --speedCounter) move left
+    jnz eraseRightColl
+    jmp finished
+
+    moveRight:
+    mov ax, playerTwoBarLeft
+    sub ax, barTwoLeft
+    mov barTwoSpeed, ax
+    mov barTwoSpeedCounter, ax
+    drawRightColl:
+        drawPixel grey, playerTwoBarRight, barY       
+        inc barY            
+        cmp barY, barBottom
+        jne drawRightColl
+    
+    inc playerTwoBarRight            ; move right
+    mov barY, barTopInitial            ; reset barY to match top
+
+    eraseLeftColl:
+        drawPixel black, barTwoLeft, barY
+        inc barY
+        cmp barY, barBottom
+        jne eraseLeftColl
+    
+    inc barTwoLeft             ; move right
+    mov barY, barTopInitial            ; reset barY to match top
+    dec barTwoSpeedCounter        ; for (speedCounter = speed; speedCounter > 0; --speedCounter) move left
+    jnz drawRightColl
+
+    finished:
+    ret
+
+moveSecondBar ENDP
+
 resetBar PROC FAR
     mov playerOneBarLeft, playerOneBarLeftInitial
     mov playerOneBarRight, playerOneBarRightInitial
     mov playerTwoBarLeft, playerTwoBarLeftInitial
     mov playerTwoBarRight, playerTwoBarRightInitial
+    mov barTwoLeft, playerTwoBarLeftInitial
     mov barX1, playerOneBarLeftInitial
     mov barX2, playerTwoBarLeftInitial
     mov barY, barTopInitial
