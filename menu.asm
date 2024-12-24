@@ -28,10 +28,6 @@ clear_screen MACRO
                  mov dl, 80
                  mov dh, 25
                  int 10h
-
-                  MOV AH, 0
-                MOV AL, 3
-                INT 10h
 ENDM
 
 moveCursor MACRO row, col
@@ -50,6 +46,7 @@ ENDM
 
 extrn GAME:far
 extrn chat:far
+extrn DrawingBricks:far
 public menu
 
 .model small
@@ -64,16 +61,18 @@ menu proc far
                    
                    clear_screen
 
+				   call DrawingBricks
+
     ; Center and display "Start"
-                   moveCursor     10, 30
+                   moveCursor     18, 16
                    displayMessage menu1
 
     ; Center and display "Quit"
-                   moveCursor     12, 30
+                   moveCursor     20, 16
                    displayMessage menu2
 
     ; Center and display "Chat"
-                   moveCursor     14, 30
+                   moveCursor     22, 16
                    displayMessage menu3
 
     
