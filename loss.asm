@@ -1,6 +1,8 @@
 extrn menu:far
 extrn LEVEL:word
-extrn resetActiveBricks:far
+extrn Drawing:far
+extrn Drawingloss:far
+; extrn resetActiveBricks:far
 extrn Convert_Number:far
 public loss
 EXTRN LIVES:word
@@ -100,28 +102,31 @@ loss PROC FAR
 ;;;;;;;;;;;;;;;;;;;;
 
                 losee:
+                    call Drawingloss
     ; Display 'Game Over' in the middle of the screen
-                   mov    dh, 12              ; Middle row (approx.)
-                   mov    dl, 15              ; Center column (approx.)
+                   mov    dh, 17              ; Middle row (approx.)
+                   mov    dl, 12              ; Center column (approx.)
                    call   Set_Cursor
                    lea    dx, GameOverText
                    call   Display_String
                    jmp display_label
                    win:
-                   mov    dh, 12              ; Middle row (approx.)
-                   mov    dl, 15              ; Center column (approx.)
+                   call Drawing
+
+                   mov    dh, 17              ; Middle row (approx.)
+                   mov    dl, 12              ; Center column (approx.)
                    call   Set_Cursor
                    lea    dx, YouWinText
                    call   Display_String
 
                     
 display_label:
-                    mov dh, 14
-                    mov dl, 15
+                    mov dh, 17
+                    mov dl, 12
                     call Set_Cursor
                     lea dx, ScoreText
                     call Display_String
-                    mov dh, 14
+                    mov dh, 17
                     mov dl, 28
                     call Set_cursor
                     lea di, CurScore
@@ -130,15 +135,15 @@ display_label:
                     lea dx, CurScore
                     call Display_String
     ; Display Exit option
-                   mov    dh, 16              ; Below 'Game Over'
-                   mov    dl, 15              ; Center column (approx.)
+                   mov    dh, 20              ; Below 'Game Over'
+                   mov    dl, 12              ; Center column (approx.)
                    call   Set_Cursor
                    lea    dx, ExitOption
                    call   Display_String
 
     ; Display Menu option
-                   mov    dh, 17              ; Below Exit option
-                   mov    dl, 15              ; Center column (approx.)
+                   mov    dh, 22              ; Below Exit option
+                   mov    dl, 12              ; Center column (approx.)
                    call   Set_Cursor
                    lea    dx, MenuOption
                    call   Display_String
