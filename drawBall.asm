@@ -63,16 +63,16 @@ endm
 	brick_width EQU 28d					;bricks width
     brick_height EQU 9d					;bricks height
 
-	GAME_WINDOW     dw  10d
+	GAME_WINDOW     dw  14d
 	WINDOW_WIDTH    dw  140h                    	;width of the window (320)
 	WINDOW_HEIGHT   dw  0c8h                    	;height of the window (200)
 	WINDOW_BOUNCE   dw  3h                      	;used to check collision early
 
-	BALL_1_X          dw  50h                    	;x position of the ball
-	BALL_1_ORIGINAL_X equ  50h                    	;x original position
+	BALL_1_X          dw  79d                    	;x position of the ball
+	BALL_1_ORIGINAL_X equ  79d                    	;x original position
 	
-	BALL_2_X          dw  0c0h                    	;x position of the ball
-	BALL_2_ORIGINAL_X equ  0c0h                    	;x original position
+	BALL_2_X          dw  240d                    	;x position of the ball
+	BALL_2_ORIGINAL_X equ  240d                    	;x original position
 
 	BALL_1_Y          dw  64h                     	;y position of the ball
 
@@ -104,6 +104,7 @@ endm
 	                	dw  1, 1, 1, 1,1
 	                	dw  1, 1, 1, 1,1
 	                	dw  1, 1, 1, 1,1
+	bar_height EQU 10
 					
 
 .CODE
@@ -175,13 +176,13 @@ check_left_wall:
 	; BALL_X > window - ball_size - offset : collided
 	                    mov  ax,156
 	                    sub  ax,BALL_SIZE
-	                    sub  ax,WINDOW_BOUNCE
+	                    ; sub  ax,WINDOW_BOUNCE
 	                    cmp  BALL_1_X,ax
 	                    jle  second_ball_right         	;if it collides with right wall
 	; =========to avoid gettings tuck========
 	                    mov  ax, 156
 	                    sub  ax, BALL_SIZE
-	                    sub  ax, WINDOW_BOUNCE
+	                    ; sub  ax, WINDOW_BOUNCE
 	                    mov  BALL_1_X, ax
 	;========================================
 	                    NEG  BALL_X_1_SPEED             	;jge
@@ -231,12 +232,14 @@ check_left_wall:
 						sub  ax,GAME_WINDOW
 	                    cmp  BALL_1_Y,ax
 	                    jle  second_ball_bottom        	;if it collides with bottom wall
-						neg  BALL_Y_1_SPEED             	;jge
+						NEG BALL_Y_1_SPEED
+						;JMP  Reset_Ball_1_Position             	;jge
 	;======to avoid getting stuck======
 	                    mov  ax, WINDOW_HEIGHT
 	                    sub  ax, BALL_SIZE
 	                    sub  ax, WINDOW_BOUNCE
-	                    sub  ax,GAME_WINDOW
+	                    sub  ax, GAME_WINDOW
+
 	                    ; dec  LIVES_1
 						; jnz comp
 						; call loss
@@ -248,18 +251,20 @@ check_left_wall:
 second_ball_bottom:
 	;second ball with bottom wall
 	; BALL_Y >= window - ball - offset : collided
-						mov  ax,WINDOW_HEIGHT
-	                    sub  ax,BALL_SIZE
-	                    sub  ax,WINDOW_BOUNCE
-						sub  ax,GAME_WINDOW
+						mov  ax, WINDOW_HEIGHT
+	                    sub  ax, BALL_SIZE
+	                    sub  ax, WINDOW_BOUNCE
+						sub  ax, GAME_WINDOW
+
 	                    cmp  BALL_2_Y,ax
 	                    jle  dont_jump_this_y         	;if it collides with bottom wall
-						neg  BALL_Y_2_SPEED             	;jge	
+						NEG BALL_Y_2_SPEED
+						;JMP  Reset_Ball_2_Position             	;jge	
 	;======to avoid getting stuck======
 						mov  ax, WINDOW_HEIGHT
 	                    sub  ax, BALL_SIZE
 	                    sub  ax, WINDOW_BOUNCE
-	                    sub  ax,GAME_WINDOW
+	                    sub  ax, GAME_WINDOW
 	                    ; dec  LIVES_2
 						; jnz comp2
 						; call loss

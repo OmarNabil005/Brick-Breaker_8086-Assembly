@@ -27,27 +27,27 @@ public barTop
 .DATA
     barTop dw 170d
     barBottom equ 180d
-    playerOneBarLeft dw 60d
-    playerOneBarRight dw 109d
-    playerTwoBarLeft dw 210d
-    playerTwoBarRight dw 259d
+    playerOneBarLeft dw 55d
+    playerOneBarRight dw 104d
+    playerTwoBarLeft dw 216d
+    playerTwoBarRight dw 265d
 
     ; initial values for the bars
-    playerOneBarLeftInitial equ 60d
-    playerOneBarRightInitial equ 109d
-    playerTwoBarLeftInitial equ 210d
-    playerTwoBarRightInitial equ 259d
+    playerOneBarLeftInitial equ 55d
+    playerOneBarRightInitial equ 104d
+    playerTwoBarLeftInitial equ 216d
+    playerTwoBarRightInitial equ 265d
     barTopInitial equ 170d
 
 
     ; threshold values for the bars
     playerOneBarLeftThreshold equ 0d
-    playerOneBarRightThreshold equ 160d
-    playerTwoBarLeftThreshold equ 160d
+    playerOneBarRightThreshold equ 157d
+    playerTwoBarLeftThreshold equ 162d
     playerTwoBarRightThreshold equ 320d
 
-    barX1 dw 60d
-    barX2 dw 210d
+    barX1 dw 55d
+    barX2 dw 215d
     barY dw 170d
 
     speed db 04h

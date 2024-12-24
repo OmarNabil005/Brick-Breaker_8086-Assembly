@@ -28,7 +28,7 @@ public vertical_line
 .stack 64
 .data
     bricks_initial_y       dw  6d, 20d, 34d, 48d, 62d          ;initial y-values (rows) for bricks (total=5)
-    bricks_initial_x_left  dw  4d, 35d, 66d, 97d, 128d         ; 38 pixels between starts (32 + 6)
+    bricks_initial_x_left  dw  3d, 34d, 65d, 96d, 127d         ; 38 pixels between starts (32 + 6)
     bricks_initial_x_right dw  164d, 195d, 226d, 257d, 288d    ; Same spacing
     colors                 dw  7, 10, 9, 13, 12                ;colors for rows (grey, green, blue, pink, red)
     num_columns            EQU 5                               ;number of bricks in each row
@@ -92,7 +92,7 @@ vertical_line proc FAR
         drawPixel 07h, di, si
 
         inc si
-        cmp si, 200
+        cmp si, 180
         je drawHorizontal1                  ; jump to outer loop if inner loop ended 
 
     jmp drawVertical1
