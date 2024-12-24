@@ -3,7 +3,7 @@ public brick
 .model small
 
 .data
-    brick_width EQU 32d					;bricks width
+    brick_width EQU 28d					;bricks width
     brick_height EQU 9d					;bricks height
 .code
 brick PROC FAR
