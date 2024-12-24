@@ -35,7 +35,9 @@ public vertical_line
     num_rows               EQU 5                               ;number of rows
     brick_width            EQU 28d                             ;bricks width
     brick_height           EQU 9d                              ;bricks height
-
+    special_good_color     EQU 0Eh                             ;special color for bricks
+    special_bad_color      EQU 4h                             ;special color for bricks
+    place_holder           dw 0                       ;place holder for the brick                   
 .code
 
 drawBricksleft PROC FAR
@@ -51,8 +53,29 @@ drawBricksleft PROC FAR
     
     Render_Horizontal_left: 
                             PUSH        CX
-		
+		;(curr_y * cols) + curr_x
+                            push dx
+                            mov         ax, si
+                            mov         cx, num_columns
+                            mul         cx
+                            mov         place_holder, di
+                            add         place_holder, ax
+                            pop         dx
+                            mov         ax,32
+                            cmp         place_holder, ax
+                            jne         another_che
+                            mov         ax, special_good_color
+                            jmp         compp
+                            another_che:
+                            mov ax,26
+                            cmp place_holder, ax
+                            jne normal_brick
+                            mov ax, special_bad_color
+                            jmp compp
+
+                            normal_brick:
                             MOV         AX, colors[SI]
+                            compp:
                             MOV         CX, bricks_initial_x_left[DI]
                             PUSH        DI
 		
@@ -115,8 +138,30 @@ drawBricksright PROC FAR
     
     Render_Horizontal_right:
                             PUSH        CX
-		
+		;(curr_y * cols) + curr_x
+                            push dx
+                            mov         ax, si
+                            mov         cx, num_columns
+                            mul         cx
+                            mov         place_holder, di
+                            add         place_holder, ax
+                            pop dx
+                            mov         ax,32
+                            cmp         place_holder, ax
+                            jne         another_chee
+                            mov         ax, special_good_color
+                            jmp         comppp
+
+                            another_chee:
+                            mov         ax,26
+                            cmp         place_holder, ax
+                            jne         normal_brickk
+                            mov         ax, special_bad_color
+                            jmp         comppp
+                            
+                            normal_brickk:
                             MOV         AX, colors[SI]
+                            comppp:
                             MOV         CX, bricks_initial_x_right[DI]
                             PUSH        DI
 		
@@ -141,19 +186,3 @@ drawBricksright PROC FAR
                             ret
 drawBricksright ENDP
 end drawBricksright
-; main PROC
-;                             MOV         AX, @data                         ; Initialize DS
-;                             MOV         DS, AX
-                            
-;                             MOV         AH, 0                             ; Set video mode
-;                             MOV         AL, 13h                           ; 320x200 256 color mode
-;                             INT         10h
-                            
-;                             clearScreen
-;                             call        drawBricksleft
-;                             call        drawBricksright
-                            
-;                             MOV         AH, 4Ch                           ; Return to DOS
-;                             INT         21h
-; main ENDP
-; end main

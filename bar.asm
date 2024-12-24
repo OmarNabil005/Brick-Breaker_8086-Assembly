@@ -61,6 +61,8 @@ public barTop
     ; colors
     grey equ 07h
     black equ 0h
+    bar1 equ 0ach
+    bar2 equ 70h
 .CODE
 Bar PROC FAR
 
@@ -73,7 +75,7 @@ Bar PROC FAR
         cont1:
 
     drawVertical1:                          ; inner loop (draws vertical lines)
-        drawPixel grey, barX1, barY
+        drawPixel bar1, barX1, barY
 
         inc barY
         cmp barY, barBottom      
@@ -91,7 +93,7 @@ Bar PROC FAR
         cont2:
 
     drawVertical2:                          ; inner loop (draws vertical lines)
-        drawPixel grey, barX2, barY
+        drawPixel bar2, barX2, barY
 
         inc barY
         cmp barY, barBottom      
@@ -122,7 +124,7 @@ moveLeftlabel:
     mov barY, cx            ; reset barY to match top
 
     drawLeftCol:
-        drawPixel grey, playerOneBarLeft, barY
+        drawPixel bar1, playerOneBarLeft, barY
 
         inc barY
         cmp barY, barBottom
@@ -146,7 +148,7 @@ moveRightlabel:
     jmp exitRight
 
     drawRightCol:
-        drawPixel grey, playerOneBarRight, barY 
+        drawPixel bar1, playerOneBarRight, barY 
 
         inc barY            
         cmp barY, barBottom
@@ -189,7 +191,7 @@ moveLeftlabel1:
     mov barY, barTopInitial            ; reset barY to match top
 
     drawLeftCol1:
-        drawPixel grey, playerTwoBarLeft, barY
+        drawPixel bar2, playerTwoBarLeft, barY
         inc barY
         cmp barY, barBottom
         jne drawLeftCol1
@@ -212,7 +214,7 @@ moveRightlabel2:
     jmp exitRight2
 
     drawRightCol2:
-        drawPixel grey, playerTwoBarRight, barY       
+        drawPixel bar2, playerTwoBarRight, barY       
         inc barY            
         cmp barY, barBottom
         jne drawRightCol2
@@ -260,7 +262,7 @@ eraseRightColl:
     dec playerTwoBarRight                     ; move left
     mov barY, barTopInitial             ; reset barY to match top
     drawLeftColl:
-        drawPixel grey, barTwoLeft, barY
+        drawPixel bar2, barTwoLeft, barY
         inc barY
         cmp barY, barBottom
         jne drawLeftColl
@@ -276,7 +278,7 @@ eraseRightColl:
     mov barTwoSpeed, ax
     mov barTwoSpeedCounter, ax
     drawRightColl:
-        drawPixel grey, playerTwoBarRight, barY       
+        drawPixel bar2, playerTwoBarRight, barY       
         inc barY            
         cmp barY, barBottom
         jne drawRightColl

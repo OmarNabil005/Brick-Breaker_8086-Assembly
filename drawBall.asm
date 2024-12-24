@@ -59,21 +59,6 @@ endm
     EXTRN BRICKS_LEFT_1:word
 	EXTRN BRICKS_LEFT_2:word
 	extrn LIVES_2:word
-	; EXTRN LEVEL_2:word
-	; EXTRN BRICKS_LEFT_2:word
-	; EXTRN playerOneBarLeft:word
-	; EXTRN playerTwoBarLeft:word
-	; EXTRN playerOneBarRight:word
-	; EXTRN playerTwoBarRight:word
-	; EXTRN barTop:word
-	; EXTRN barBottom:word
-
-	; public TIME_STORE
-	; public Move_Ball
-	; public Draw_Ball
-	; public Draw_B_Ball
-	; public BALL_X
-	; public BALL_Y
 	public BALL_X_1_SPEED
 	public BALL_Y_1_SPEED
 	public resetBallAndBricks
@@ -328,7 +313,7 @@ check_left_wall:
 						sub  ax,GAME_WINDOW
 	                    cmp  BALL_1_Y,ax
 	                    jle  second_ball_bottom        	;if it collides with bottom wall
-						NEG BALL_Y_1_SPEED
+						;NEG BALL_Y_1_SPEED
 						;JMP  Reset_Ball_1_Position             	;jge
 	;======to avoid getting stuck======
 	                    mov  ax, WINDOW_HEIGHT
@@ -336,13 +321,13 @@ check_left_wall:
 	                    sub  ax, WINDOW_BOUNCE
 	                    sub  ax, GAME_WINDOW
 
-	                    ; dec  LIVES
-						; jnz comp
-						; call loss
+	                    dec  LIVES
+						jnz comp
+						call loss
 						comp:
 	                    mov  BALL_1_Y, ax              	;to avoid gettings tuck
 	;===================================
-	                    ; jmp  reset_position
+	                    jmp  reset_position
 
 second_ball_bottom:
 	;second ball with bottom wall
@@ -353,19 +338,19 @@ second_ball_bottom:
 						sub  ax, GAME_WINDOW
 	                    cmp  BALL_2_Y,ax
 	                    jle  dont_jump_this_y         	;if it collides with bottom wall
-						NEG BALL_Y_2_SPEED
+						;NEG BALL_Y_2_SPEED
 
 	;======to avoid getting stuck======
 						mov  ax, WINDOW_HEIGHT
 	                    sub  ax, BALL_SIZE
 	                    sub  ax, WINDOW_BOUNCE
 	                    sub  ax, GAME_WINDOW
-	                    ; dec  LIVES_2
-						; jnz comp2
-						; call loss
+	                    dec  LIVES_2
+						jnz comp2
+						call loss
 						comp2:
 	                    mov  BALL_2_Y, ax              	;to avoid gettings tuck								
-						; JMP  Reset_Ball_2_Position             	;jge	
+						JMP  Reset_Ball_2_Position             	;jge	
 
 	dont_jump_this_y:   
 	ret
@@ -683,8 +668,6 @@ Draw_Ball_1 PROC FAR
 	                    RET
 Draw_Ball_1 ENDP
 
-
-
 Draw_Ball_2 PROC FAR
 					;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	                    mov  cx, BALL_2_X              	;set start X
@@ -733,7 +716,6 @@ Reset_Ball_2_Position PROC NEAR
 
 	                    RET
 Reset_Ball_2_Position ENDP
-
 
 ; 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -832,7 +814,7 @@ check_collision_left PROC near
 						pop bx
 						pop ax
 
-	                    cmp  BRICKS_LEFT_1, 20          	; Check if all bricks are cleared
+	                    cmp  BRICKS_LEFT_1, 0          	; Check if all bricks are cleared
 	                    jne  draw_next_brick
 	                    call loss                	;Level up logic if all bricks are cleared
 						jmp  no_index
@@ -846,8 +828,30 @@ check_collision_left PROC near
 	                    call Brick                   	;and draw black brick
 	                    pop  si
 	                    pop  bx
+						cmp di,32
+						jne another_check
+						add SCORE, 3
+						jmp no_index
+	another_check:				
+						cmp di,26
+						jne rett
+						add SCORE, 3
+						cmp BALL_X_1_SPEED,0
+						jg incer
+						sub BALL_X_1_SPEED,2
+						jmp second_ball
 
-	rett:
+						incer:
+						add BALL_X_1_SPEED, 2
+		second_ball:
+						cmp BALL_Y_1_SPEED,0
+						jg incerr
+						sub BALL_Y_1_SPEED,2
+						jmp rett
+
+						incerr: 
+						add BALL_Y_1_SPEED, 2
+	rett:									
 	                    pop  dx
 	                    pop  cx
 	                    pop  ax
@@ -937,7 +941,7 @@ check_collision_right PROC near
 	                    dec  BRICKS_LEFT_2             	; Reduce brick count
 	                    ;inc  SCORE                   	; Increase score by 1
 	
-	                    cmp  BRICKS_LEFT_2, 20          	; Check if all bricks are cleared
+	                    cmp  BRICKS_LEFT_2, 0          	; Check if all bricks are cleared
 	                    jne  draw_next_brickk
 	                    call loss                	;Level up logic if all bricks are cleared
 						jmp  no_indexx
@@ -951,7 +955,28 @@ check_collision_right PROC near
 	                    call Brick                   	;and draw black brick
 	                    pop  si
 	                    pop  bx
+						cmp di,32
+						je no_indexx
+			
+						cmp di,26
+						jne rettt
+						add SCORE, 3
+						cmp BALL_X_2_SPEED,0
+						jg inceer
+						sub BALL_X_2_SPEED,2
+						jmp y_balll
 
+						inceer:
+						add BALL_X_2_SPEED, 2
+		y_balll:
+						cmp BALL_Y_2_SPEED,0
+						jg inceerr
+						sub BALL_Y_2_SPEED,2
+						jmp rettt
+
+						inceerr: 
+						add BALL_Y_2_SPEED, 2
+		rettt:
 	                    pop  dx
 	                    pop  cx
 	                    pop  ax
