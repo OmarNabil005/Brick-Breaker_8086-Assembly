@@ -16,7 +16,7 @@ initPort MACRO
 
 	;Set port configuration
 	         MOV DX, 3FBh
-	         MOV AL, 00011011b
+	         MOV AL, 00011111b
 	         OUT DX, AL
 ENDM
 
@@ -27,6 +27,10 @@ clearscreen macro
 	            MOV dh, 25   	; bottom row
 	            MOV dl, 80   	; right column
 	            int 10h      	; call the interrupt
+
+				mov         ah,00h       	;set video mode
+				mov         al,13h       	;choose video mode
+				int         10h
 endm
 	
 	extrn display_stats:FAR
@@ -79,9 +83,10 @@ MAIN PROC
 	clearscreen
 
 
-	mov         ah,00h       	;set video mode
-	mov         al,13h       	;choose video mode
-	int         10h
+	
+
+	initPort
+
 	CALL Menu
 
 
@@ -89,6 +94,7 @@ MAIN ENDP
 
 GAME PROC FAR
 	clearscreen
+	call 		resetAll
 	call        drawBricksleft
 	call        drawBricksright
 	call        vertical_line
@@ -112,8 +118,8 @@ GAME PROC FAR
 		Call Draw_Ball_1
 		Call Draw_Ball_2
 
-		CALL check_local
-		CALL check_remote
+		;CALL check_local
+		;CALL check_remote
 
 		JMP Check_time
 
@@ -161,7 +167,7 @@ check_local proc
 	checkEsc:        
 	                 cmp         ah, 1
 	                 jne         end_local         	; if not esc, keep game going
-	;jmp         exitt
+					call menu
 	end_local:       
 	
 	                 ret
@@ -194,22 +200,24 @@ check_remote PROC
 		
 	checkEscRemote:  
 	                 cmp         al, 1             	;escape
-	;jne         moveball     	; if not esc, keep game going
+					jne         exit_remote     	; if not esc, keep game going
+					call menu
 	exit_remote:     
 	                 ret
 check_remote ENDP
 
 
 
-; resetAll PROC NEAR
-; 	MOV         LIVES, 3
-; 	MOV         SCORE, 0
-; 	MOV         LEVEL, 1
-; 	MOV         BRICKS_LEFT, 45
-; 	call 	   resetBallAndBricks
-; 	call 	   resetBar
-; 	RET
-; resetAll ENDP
+resetAll PROC NEAR
+	MOV         LIVES, 3
+	MOV         SCORE, 0
+	MOV         LEVEL, 1
+	MOV         BRICKS_LEFT_1, 25
+	MOV         BRICKS_LEFT_2, 25
+	call 	   resetBallAndBricks
+	call 	   resetBar
+	RET
+resetAll ENDP
 
 
 

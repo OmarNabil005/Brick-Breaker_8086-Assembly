@@ -1,4 +1,24 @@
+initPort MACRO
+	;Set Divisor Latch Access Bit
+	         MOV DX, 3FBh     	; Line Control Register
+	         MOV AL, 10000000b	;Set Divisor Latch Access Bit
+	         OUT DX, AL       	;Out it
+	
+	;Set LSB byte of the Baud Rate Divisor Latch register.
+	         MOV DX, 3F8h
+	         MOV AL, 0Ch
+	         OUT DX, AL
 
+	;Set MSB byte of the Baud Rate Divisor Latch register.
+	         MOV DX, 3F9h
+	         MOV AL, 00h
+	         OUT DX, AL
+
+	;Set port configuration
+	         MOV DX, 3FBh
+	         MOV AL, 00011011b
+	         OUT DX, AL
+ENDM
 clearscreen macro
 	            MOV ax, 0600h	; Scroll up intterupt
 	            MOV bh, 00h
@@ -45,7 +65,7 @@ endm
 	; public BALL_Y
 	; public BALL_X_SPEED
 	; public BALL_Y_SPEED
-	; public resetBallAndBricks
+	public resetBallAndBricks
 
 	public Move_Ball
 	public Draw_B_1_Ball
@@ -85,8 +105,8 @@ endm
 	
 
 
-	BALL_SPEED_ORIGINAL_X dw  02h               	;original speed of the ball in x axis
-	BALL_SPEED_ORIGINAL_Y dw  05h               	;original speed of the ball in y axis
+	BALL_SPEED_ORIGINAL_X EQU  02h               	;original speed of the ball in x axis
+	BALL_SPEED_ORIGINAL_Y EQU  05h               	;original speed of the ball in y axis
 
 	BALL_X_1_SPEED    dw  02h                     	;speed of the ball in x axis
 	BALL_Y_1_SPEED    dw  05h                     	;speed of the ball in y axis
@@ -114,14 +134,13 @@ Move_Ball PROC FAR
 	                    MOV  AX,BALL_X_1_SPEED
 	                    ADD  BALL_1_X,AX               	;inc ball x pos with velocity
 
-						MOV  AX,BALL_X_2_SPEED
-						ADD  BALL_2_X,AX               	;inc ball x pos with velocity
-
 	                    mov  ax,BALL_Y_1_SPEED
 	                    ADD  BALL_1_Y,AX               	;inc ball x pos with velocity
 
-						mov  ax,BALL_Y_2_SPEED
-						ADD  BALL_2_Y,AX               	;inc ball x pos with velocity
+						initPort
+
+						call send_all
+						call recieve_all
 
 
 		call check_walls
@@ -152,6 +171,167 @@ Move_Ball PROC FAR
 	
 
 Move_Ball ENDP
+
+send_all PROC
+	; Wait until THR is empty
+	MOV     DX, 3FDh            ; Line Status Register
+	 MOV     DX, 3FDh            ; Line Status Register
+
+    IN      AL, DX
+    AND     AL, 00100000b       ; Check if THR is empty
+    JZ      cant_send_all              ; Wait if not empty
+
+    ; Send lower byte
+    MOV     DX, 3F8h            ; Transmit Holding Register
+    MOV     AL, BYTE PTR [BALL_1_X]
+    OUT     DX, AL
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	MOV     DX, 3FDh            ; Line Status Register
+	 MOV     DX, 3FDh            ; Line Status Register
+wait1:
+    IN      AL, DX
+    AND     AL, 00100000b       ; Check if THR is empty
+    JZ      wait1              ; Wait if not empty
+
+    ; Send lower byte
+    MOV     DX, 3F8h            ; Transmit Holding Register
+    MOV     AL, BYTE PTR [BALL_1_Y]
+    OUT     DX, AL
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+cant_send_all:
+	RET
+
+endp send_all
+
+recieve_all PROC
+	 ; Wait for data in RHR
+    MOV     DX, 3FDh
+
+    IN      AL, DX
+    AND     AL, 00000001b       ; Check if data is available
+    JZ      cant_recieve              ; Wait if no data
+
+    ; Receive lower byte
+    MOV     DX, 3F8h
+    IN      AL, DX
+    MOV     BYTE PTR [BALL_2_Y], AL
+	
+	MOV     DX, 3FDh
+wait2:
+    IN      AL, DX
+    AND     AL, 00000001b       ; Check if data is available
+    JZ      wait2              ; Wait if no data
+
+    ; Receive lower byte
+    MOV     DX, 3F8h
+    IN      AL, DX
+    MOV     BYTE PTR [BALL_2_X], AL
+	add     BALL_2_X, 162
+
+  cant_recieve:
+    RET
+
+endp recieve_all
+
+; send_ball_1_x PROC
+;     ; Wait until THR is empty
+;     MOV     DX, 3FDh            ; Line Status Register
+; .wait1:
+;     IN      AL, DX
+;     AND     AL, 00100000b       ; Check if THR is empty
+;     JZ      .wait1              ; Wait if not empty
+
+;     ; Send lower byte
+;     MOV     DX, 3F8h            ; Transmit Holding Register
+;     MOV     AL, BYTE PTR [BALL_1_X]
+;     OUT     DX, AL
+
+;     RET
+; send_ball_1_x ENDP
+
+; send_ball_1_y PROC
+;     ; Wait until THR is empty
+;     MOV     DX, 3FDh
+; .wait11:
+;     IN      AL, DX
+;     AND     AL, 00100000b
+;     JZ      .wait11
+
+;     ; Send lower byte
+;     MOV     DX, 3F8h
+;     MOV     AL, BYTE PTR [BALL_1_Y]
+;     OUT     DX, AL
+
+;     ; Wait for THR to be empty again
+; .wait22:
+;     IN      AL, DX
+;     AND     AL, 00100000b
+;     JZ      .wait22
+
+;     ; Send higher byte
+;     MOV     AL, BYTE PTR [BALL_1_Y+1]
+;     OUT     DX, AL
+
+;     RET
+; send_ball_1_y ENDP
+
+; ;-------------------------------------------------
+; ; Receive Ball 2 X Position
+; recieve_ball_2_x PROC
+;     ; Wait for data in RHR
+;     MOV     DX, 3FDh
+; .wait3:
+;     IN      AL, DX
+;     AND     AL, 00000001b       ; Check if data is available
+;     JZ      .wait3              ; Wait if no data
+
+;     ; Receive lower byte
+;     MOV     DX, 3F8h
+;     IN      AL, DX
+;     MOV     BYTE PTR [BALL_2_X], AL
+
+;     ; Wait for next data byte
+; .wait4:
+;     IN      AL, DX
+;     AND     AL, 00000001b
+;     JZ      .wait4
+
+;     ; Receive higher byte
+;     IN      AL, DX
+;     MOV     BYTE PTR [BALL_2_X+1], AL
+
+;     RET
+; recieve_ball_2_x ENDP
+
+; ;-------------------------------------------------
+; ; Receive Ball 2 Y Position
+; recieve_ball_2_y PROC
+;     ; Wait for data in RHR
+;     MOV     DX, 3FDh
+; .wait5:
+;     IN      AL, DX
+;     AND     AL, 00000001b
+;     JZ      .wait5
+
+;     ; Receive lower byte
+;     MOV     DX, 3F8h
+;     IN      AL, DX
+;     MOV     BYTE PTR [BALL_2_Y], AL
+
+;     ; Wait for next data byte
+; .wait6:
+;     IN      AL, DX
+;     AND     AL, 00000001b
+;     JZ      .wait6
+
+;     ; Receive higher byte
+;     IN      AL, DX
+;     MOV     BYTE PTR [BALL_2_Y+1], AL
+
+;     RET
+; recieve_ball_2_y ENDP
 
 check_walls proc 
 check_left_wall:    
@@ -587,7 +767,10 @@ Draw_Ball_1 PROC FAR
 	                    RET
 Draw_Ball_1 ENDP
 
+
+
 Draw_Ball_2 PROC FAR
+					;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	                    mov  cx, BALL_2_X              	;set start X
 	                    mov  dx, BALL_2_Y              	;set start Y
 
@@ -610,7 +793,7 @@ Draw_Ball_2 PROC FAR
 	                    sub  ax,BALL_2_Y               	;seeing the diff bet current y and iniyial y
 	                    cmp  ax,BALL_SIZE            	;comparing it with ball size
 	                    jng  hor_draw_ball_2           	;go to draw next line
-
+exit_remote:
 	                    RET
 Draw_Ball_2 ENDP
 
@@ -867,29 +1050,41 @@ check_collision_right ENDP
 ;     ret
 ; level_up ENDP
 
-; resetBallAndBricks PROC FAR
-; 						call resetBallSpeed
-; 						call resetActiveBricks
-; 						ret
-; resetBallAndBricks ENDP
+resetBallAndBricks PROC FAR
+						call resetBallSpeed
+						call resetActiveBricks
+						ret
+resetBallAndBricks ENDP
 
-; resetActiveBricks PROC NEAR
-; 						push si
-; 						mov  cx, 45
-; 	                    mov  si, 0
-; 	resetActiveBricks_loop:
-; 	                    mov  active_bricks[si], 1
-; 	                    add  si, 2
-; 	                    loop resetActiveBricks_loop
-; 						pop si
-; 	                    ret
-; resetActiveBricks ENDP
+resetActiveBricks PROC NEAR
+						push si
+						mov  cx, 25
+	                    mov  si, 0
+	resetActiveBricks_1_loop:
+	                    mov  active_bricks_1[si], 1
+	                    add  si, 2
+	                    loop resetActiveBricks_1_loop
 
-; resetBallSpeed PROC NEAR
-; 						call Reset_Ball_Position
-; 	                    mov  BALL_X_SPEED, 2
-; 	                    mov  BALL_Y_SPEED, 5
-; 	                    ret
-; resetBallSpeed ENDP
+						mov  cx, 25
+	                    mov  si, 0
+	resetActiveBricks_2_loop:
+	                    mov  active_bricks_2[si], 1
+	                    add  si, 2
+	                    loop resetActiveBricks_2_loop
+
+						pop si
+	                    ret
+resetActiveBricks ENDP
+
+resetBallSpeed PROC NEAR
+						call Reset_Ball_1_Position
+						call Reset_Ball_2_Position
+	                    mov  BALL_X_1_SPEED, BALL_SPEED_ORIGINAL_X
+	                    mov  BALL_Y_1_SPEED, BALL_SPEED_ORIGINAL_Y
+						mov  BALL_X_2_SPEED, BALL_SPEED_ORIGINAL_X
+	                    mov  BALL_Y_2_SPEED, BALL_SPEED_ORIGINAL_Y
+	                    ret
+resetBallSpeed ENDP
+
 
 END Move_Ball
