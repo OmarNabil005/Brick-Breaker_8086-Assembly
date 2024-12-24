@@ -117,14 +117,15 @@ GAME PROC FAR
 
 		Call Move_Ball
 
+		CALL check_local
+		CALL check_remote
+
 		Call Draw_Ball_1
 		Call Draw_Ball_2
 
 		call display_stats
 
 
-		CALL check_local
-		CALL check_remote
 
 		JMP Check_time
 
